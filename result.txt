@@ -1,0 +1,125 @@
+Time slot   0
+ld_routine
+	Loaded a process at input/proc/p0s, PID: 1 PRIO: 0
+	CPU 1: Dispatched process  1
+CALC
+Time slot   1
+	Loaded a process at input/proc/p1s, PID: 2 PRIO: 15
+Time slot   2
+ALLOC
+	CPU 0: Dispatched process  2
+CALC
+INCREASE NUM PAGE: 2
+Inside validate_overlap_vm_area
+ALLOC
+INCREASE NUM PAGE: 2
+Inside validate_overlap_vm_area
+Time slot   3
+CALC
+	Loaded a process at input/proc/p1s, PID: 3 PRIO: 0
+Time slot   4
+CALC
+FREE
+	Loaded a process at input/proc/p1s, PID: 4 PRIO: 0
+Time slot   5
+ALLOC
+CALC
+Time slot   6
+WRITE
+write region=1 offset=20 value=100
+print_pgtbl: 0 - 1024
+00000000: 80000001
+00000004: 80000000
+00000008: 80000003
+00000012: 80000002
+: 
+CALC
+	CPU 1: Put process  1 to run queue
+	CPU 1: Dispatched process  3
+CALC
+Time slot   7
+CALC
+Time slot   8
+CALC
+	CPU 0: Put process  2 to run queue
+	CPU 0: Dispatched process  4
+CALC
+Time slot   9
+CALC
+CALC
+CALC
+Time slot  10
+CALC
+CALC
+Time slot  11
+CALC
+CALC
+Time slot  12
+CALC
+	CPU 1: Put process  3 to run queue
+	CPU 1: Dispatched process  1
+READ
+read region=1 offset=20 value=100
+print_pgtbl: 0 - 1024
+00000000: 80000001
+00000004: 80000000
+00000008: 80000003
+00000012: 80000002
+: 
+Time slot  13
+CALC
+Time slot  14
+WRITE
+write region=2 offset=20 value=102
+print_pgtbl: 0 - 1024
+00000000: 80000001
+00000004: 80000000
+00000008: 80000003
+00000012: 80000002
+: 
+	CPU 0: Put process  4 to run queue
+	CPU 0: Dispatched process  3
+CALC
+READ
+read region=2 offset=20 value=102
+print_pgtbl: 0 - 1024
+00000000: 80000001
+00000004: 80000000
+00000008: 80000003
+00000012: 80000002
+: 
+Time slot  15
+CALC
+WRITE
+write region=3 offset=20 value=103
+print_pgtbl: 0 - 1024
+00000000: 80000001
+00000004: 80000000
+00000008: 80000003
+00000012: 80000002
+: 
+Time slot  16
+CALC
+Time slot  17
+	CPU 1: Processed  1 has finished
+	CPU 1: Dispatched process  4
+CALC
+CALC
+CALC
+Time slot  18
+	CPU 0: Processed  3 has finished
+	CPU 0: Dispatched process  2
+CALC
+Time slot  19
+CALC
+CALC
+Time slot  20
+CALC
+CALC
+Time slot  21
+	CPU 1: Processed  4 has finished
+	CPU 1 stopped
+CALC
+Time slot  22
+	CPU 0: Processed  2 has finished
+	CPU 0 stopped
