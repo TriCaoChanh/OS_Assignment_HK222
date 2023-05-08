@@ -66,6 +66,7 @@ int run(struct pcb_t *proc)
 	struct inst_t ins = proc->code->text[proc->pc];
 	proc->pc++;
 	int stat = 1;
+	printf("Process #%d\n", proc->pid);
 	switch (ins.opcode)
 	{
 	case CALC:

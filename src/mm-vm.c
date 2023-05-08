@@ -84,6 +84,7 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
 
   if (get_free_vmrg_area(caller, vmaid, size, &rgnode) == 0)
   {
+    printf("FOUND FREE RG\n");
     caller->mm->symrgtbl[rgid].rg_start = rgnode.rg_start;
     caller->mm->symrgtbl[rgid].rg_end = rgnode.rg_end;
 
@@ -115,7 +116,7 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
   *alloc_addr = old_sbrk;
 
   // TRI THEM 1 DONG
-  cur_vma->sbrk = old_sbrk + size;
+  // cur_vma->sbrk = old_sbrk + size;
   return 0;
 }
 
@@ -178,6 +179,7 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
 
   if (!PAGING_PAGE_PRESENT(pte))
   { /* Page is not online, make it actively living */
+    printf("SWAPPINGGGG\n");
     int vicpgn, swpfpn;
     // int vicfpn;
     // uint32_t vicpte;
@@ -193,12 +195,15 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
 
     /* Do swap frame from MEMRAM to MEMSWP and vice versa*/
     /* Copy victim frame to swap */
-    //__swap_cp_page();
+    // __swap_cp_page();
+    __swap_cp_page(caller->mram, vicpgn, caller->active_mswp, swpfpn);
     /* Copy target frame from swap to mem */
-    //__swap_cp_page();
+    // __swap_cp_page();
+    __swap_cp_page(caller->active_mswp, tgtfpn, caller->mram, pgn);
 
     /* Update page table */
     // pte_set_swap() &mm->pgd;
+    pte_set_swap(&(mm->pgd[vicpgn]), swpfpn, 0);
 
     /* Update its online status of the target page */
     // pte_set_fpn() & mm->pgd[pgn];
@@ -458,9 +463,23 @@ int find_victim_page(struct mm_struct *mm, int *retpgn)
   struct pgn_t *pg = mm->fifo_pgn;
 
   /* TODO: Implement the theorical mechanism to find the victim page */
-  *retpgn = pg->pgn;
-  mm->fifo_pgn = pg->pg_next;
-  free(pg);
+  if(pg == NULL)
+    return -1;
+  
+  if(pg->pg_next == NULL){
+    *retpgn = pg->pgn;
+    mm->fifo_pgn = NULL;
+    free(pg);
+    return 0;
+  }
+
+  while (pg->pg_next && pg->pg_next->pg_next)
+    pg = pg->pg_next;
+
+  *retpgn = pg->pg_next->pgn;
+  free(pg->pg_next);
+  pg->pg_next = NULL;
+  // mm->fifo_pgn = pg->pg_next;
 
   return 0;
 }
