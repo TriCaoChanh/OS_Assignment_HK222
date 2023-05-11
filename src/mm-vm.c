@@ -44,12 +44,12 @@ struct vm_area_struct *get_vma_by_num(struct mm_struct *mm, int vmaid)
     return NULL;
 
   int vmait = 0;
-
+  if (pvma != NULL) vmait = pvma->vm_id; //changed
   while (vmait < vmaid)
   {
     if (pvma == NULL)
       return NULL;
-
+    vmait = pvma->vm_id; // changed
     pvma = pvma->vm_next;
   }
 
@@ -107,8 +107,11 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
    * inc_vma_limit(caller, vmaid, inc_sz)
    */
   if (inc_vma_limit(caller, vmaid, inc_sz) < 0)
+  {
+    printf("Failed to increase the limit! \n");
     return -1;
-
+  }
+    
   /*Successful increase limit */
   caller->mm->symrgtbl[rgid].rg_start = old_sbrk;
   caller->mm->symrgtbl[rgid].rg_end = old_sbrk + size;
@@ -164,6 +167,7 @@ int pgalloc(struct pcb_t *proc, uint32_t size, uint32_t reg_index)
 int pgfree_data(struct pcb_t *proc, uint32_t reg_index)
 {
   return __free(proc, 0, reg_index);
+  //return 0; // changed
 }
 
 /*pg_getpage - get the page in ram
@@ -234,15 +238,16 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
   { /* Page is not online, make it actively living */
     int tgtfpn = PAGING_SWP(pte);
     int tmpfpn;
-    if (MEMPHY_get_freefp(caller->mram, &tmpfpn) == 0)
-    {
+    if (MEMPHY_get_freefp(caller->mram, &tmpfpn) == 0) // if the RAM still has empty page
+    { // if the RAM still has empty frames
+
       __swap_cp_page(caller->active_mswp, tgtfpn, caller->mram, tmpfpn);
 
       // enlist_framephy_node(&caller->active_mswp->free_fp_list, tgtfpn);
       MEMPHY_put_freefp(caller->active_mswp, tgtfpn);
       pte_set_fpn(&caller->mm->pgd[pgn], tmpfpn);
     }
-    else
+    else // the RAM don't has any frames left
     {
       int vicpgn, vicfpn;
       int swpfpn;
@@ -263,6 +268,7 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
       __swap_cp_page(caller->mram, vicfpn, caller->active_mswp, swpfpn);
       __swap_cp_page(caller->active_mswp, tgtfpn, caller->mram, vicfpn);
       // enlist_framephy_node(&caller->active_mswp->free_fp_list, tgtfpn);
+      MEMPHY_put_freefp(caller->active_mswp, tgtfpn);
 
       /* Update page table */
       // pte_set_swap() &mm->pgd;
@@ -352,7 +358,7 @@ int pgread(
 {
   BYTE data;
   int val = __read(proc, 0, source, offset, &data);
-
+  //int val = 0; // changed
   destination = (uint32_t)data;
 #ifdef IODUMP
   printf("read region=%d offset=%d value=%d\n", source, offset, data);
@@ -403,6 +409,7 @@ int pgwrite(
 #endif
 
   return __write(proc, 0, destination, offset, data);
+  //return 1;
 }
 
 /*free_pcb_memphy - collect all memphy of pcb
@@ -451,6 +458,9 @@ struct vm_rg_struct *get_vm_area_node_at_brk(struct pcb_t *caller, int vmaid, in
 
   newrg->rg_start = cur_vma->sbrk;
   newrg->rg_end = newrg->rg_start + size;
+  //newrg->rg_end = newrg->rg_start + size*alignedsz;
+  //newrg->rg_end = cur_vma->vm_end;
+  newrg->rg_next = NULL;
 
   return newrg;
 }
@@ -488,9 +498,12 @@ int validate_overlap_vm_area(struct pcb_t *caller, int vmaid, int vmastart, int 
  */
 int inc_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz)
 {
+
+  //printf("############Increase vma limit !!!!!!!!!\n");
   struct vm_rg_struct *newrg = malloc(sizeof(struct vm_rg_struct));
   int inc_amt = PAGING_PAGE_ALIGNSZ(inc_sz);
   int incnumpage = inc_amt / PAGING_PAGESZ;
+  //printf(" ############ inc_amt %d and size %d \n", inc_amt, inc_sz);
   struct vm_rg_struct *area = get_vm_area_node_at_brk(caller, vmaid, inc_sz, inc_amt);
   struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, vmaid);
 
@@ -504,10 +517,13 @@ int inc_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz)
    * now will be alloc real ram region */
   cur_vma->vm_end += inc_sz;
   printf("INCREASE NUM PAGE: %d\n", incnumpage);
-  if (vm_map_ram(caller, area->rg_start, area->rg_end,
-                 old_end, incnumpage, newrg) < 0)
-    return -1; /* Map the memory to MEMRAM */
-
+  //if (vm_map_ram(caller, area->rg_start, area->rg_end, old_end, incnumpage, newrg) < 0)
+  if (vm_map_ram(caller, cur_vma->vm_start, cur_vma->vm_end, old_end, incnumpage, newrg) < 0)
+  {
+    /* Map the memory to MEMRAM */
+    printf("Memory map failed \n");
+    return -1; 
+  }
   return 0;
 }
 
@@ -568,7 +584,7 @@ int get_free_vmrg_area(struct pcb_t *caller, int vmaid, int size, struct vm_rg_s
     { /* Current region has enough space */
       newrg->rg_start = rgit->rg_start;
       newrg->rg_end = rgit->rg_start + size;
-
+    
       /* Update left space in chosen region */
       if (rgit->rg_start + size < rgit->rg_end)
       {
