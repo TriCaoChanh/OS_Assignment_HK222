@@ -7,7 +7,9 @@
 #include "mm.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <pthread.h>
 
+static pthread_mutex_t mm_lock;
 /*
  * init_pte - Initialize PTE entry
  */
@@ -121,6 +123,7 @@ int vmap_page_range(struct pcb_t *caller,           // process call
     /* Tracking for later page replacement activities (if needed)
      * Enqueue new usage page */
     enlist_pgn_node(&caller->mm->fifo_pgn, pgn + pgit); // put in the loop to track all the pages
+    enlist_pgn_node(&global_pgn, pgn + pgit);
   }
 
   return 0;
@@ -177,6 +180,7 @@ int vmap_page_range2(struct pcb_t *caller,           // process call
     ret_rg = newrg;
 
     enlist_pgn_node(&caller->mm->fifo_pgn, pgn + pgit); // put in the loop to track all the pages
+    enlist_pgn_node(&global_pgn, pgn+pgit);
 
     free(temp);
     free(pte);
@@ -404,6 +408,9 @@ int init_mm(struct mm_struct *mm, struct pcb_t *caller)
 
   mm->mmap = vma;
 
+  global_pgn = malloc(sizeof(struct pgn_t));  // checked
+  pthread_mutex_init(&mm_lock, NULL);
+
   return 0;
 }
 
@@ -428,12 +435,13 @@ int enlist_vm_rg_node(struct vm_rg_struct **rglist, struct vm_rg_struct *rgnode)
 
 int enlist_pgn_node(struct pgn_t **plist, int pgn)
 {
+  pthread_mutex_lock(&mm_lock);
   struct pgn_t *pnode = malloc(sizeof(struct pgn_t));
 
   pnode->pgn = pgn;
   pnode->pg_next = *plist;
   *plist = pnode;
-
+  pthread_mutex_unlock(&mm_lock);
   return 0;
 }
 

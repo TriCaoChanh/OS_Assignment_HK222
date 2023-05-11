@@ -276,6 +276,7 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
       pte_set_fpn(&caller->mm->pgd[pgn], vicfpn);
     }
     enlist_pgn_node(&caller->mm->fifo_pgn, pgn);
+    enlist_pgn_node(&global_pgn, pgn);
   }
   *fpn = GETVAL(mm->pgd[pgn], PAGING_PTE_FPN_MASK, 0);
   return 0;
@@ -504,7 +505,7 @@ int inc_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz)
   int inc_amt = PAGING_PAGE_ALIGNSZ(inc_sz);
   int incnumpage = inc_amt / PAGING_PAGESZ;
   //printf(" ############ inc_amt %d and size %d \n", inc_amt, inc_sz);
-  struct vm_rg_struct *area = get_vm_area_node_at_brk(caller, vmaid, inc_sz, inc_amt);
+  struct vm_rg_struct *area = get_vm_area_node_at_brk(caller, vmaid, inc_sz, inc_amt);  // need checked
   struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, vmaid);
 
   int old_end = cur_vma->vm_end;
@@ -534,8 +535,8 @@ int inc_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz)
  */
 int find_victim_page(struct mm_struct *mm, int *retpgn)
 {
-  struct pgn_t *pg = mm->fifo_pgn;
-
+  //struct pgn_t *pg = mm->fifo_pgn;
+  struct pgn_t *pg = global_pgn;
   /* TODO: Implement the theorical mechanism to find the victim page */
   if (pg == NULL)
     return -1;
