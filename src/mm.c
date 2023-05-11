@@ -126,7 +126,6 @@ int vmap_page_range(struct pcb_t *caller,           // process call
   return 0;
 }
 
-// Code Khải
 int vmap_page_range2(struct pcb_t *caller,           // process call
                     int addr,                       // start address which is aligned to pagesz
                     int pgnum,                      // num of mapping page
