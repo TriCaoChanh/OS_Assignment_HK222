@@ -53,6 +53,8 @@ static void *cpu_routine(void *args)
 	struct pcb_t *proc = NULL;
 	while (1)
 	{
+		// All cpu must wait until timeslot is print
+		//while(timer_id->check == 0); 
 		/* Check the status of current process */
 		if (proc == NULL)
 		{

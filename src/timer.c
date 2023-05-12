@@ -62,6 +62,7 @@ void next_slot(struct timer_id_t * timer_id) {
 	/* Tell to timer that we have done our job in current slot */
 	pthread_mutex_lock(&timer_id->event_lock);
 	timer_id->done = 1;
+	timer_id->check = 1; // changed time
 	pthread_cond_signal(&timer_id->event_cond);
 	pthread_mutex_unlock(&timer_id->event_lock);
 
@@ -88,6 +89,7 @@ void start_timer() {
 void detach_event(struct timer_id_t * event) {
 	pthread_mutex_lock(&event->event_lock);
 	event->fsh = 1;
+	event->check = 0; // changed time
 	pthread_cond_signal(&event->event_cond);
 	pthread_mutex_unlock(&event->event_lock);
 }
@@ -102,6 +104,7 @@ struct timer_id_t * attach_event() {
 			);
 		container->id.done = 0;
 		container->id.fsh = 0;
+		container->id.check = 1; //changed time
 		pthread_cond_init(&container->id.event_cond, NULL);
 		pthread_mutex_init(&container->id.event_lock, NULL);
 		pthread_cond_init(&container->id.timer_cond, NULL);

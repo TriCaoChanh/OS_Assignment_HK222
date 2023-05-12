@@ -1,169 +1,162 @@
 Time slot   0
 ld_routine
 	Loaded a process at input/proc/p0s, PID: 1 PRIO: 130
-	CPU 2: Dispatched process  1
-Process #1
-CALC
 Time slot   1
-	Loaded a process at input/proc/s3, PID: 2 PRIO: 39
+	CPU 0: Dispatched process  1
 Process #1
-ALLOC
-INCREASE NUM PAGE: 2
-	CPU 1: Dispatched process  2
-Process #2
 CALC
 Time slot   2
-	CPU 2: Put process  1 to run queue
-	CPU 2: Dispatched process  1
 Process #1
 ALLOC
 INCREASE NUM PAGE: 2
+	Loaded a process at input/proc/s3, PID: 2 PRIO: 39
 Time slot   3
+	CPU 2: Dispatched process  2
 Process #2
 CALC
+	CPU 0: Put process  1 to run queue
+	CPU 0: Dispatched process  1
 Process #1
-FREE
+ALLOC
+INCREASE NUM PAGE: 2
+Time slot   4
+Process #2
+CALC
 	Loaded a process at input/proc/m1s, PID: 3 PRIO: 15
-	CPU 1: Put process  2 to run queue
-	CPU 1: Dispatched process  3
+	CPU 3: Dispatched process  3
 Process #3
 ALLOC
-Time slot   4
+Process #1
+FREE
 INCREASE NUM PAGE: 2
-	CPU 0: Dispatched process  2
+Time slot   5
+	CPU 2: Put process  2 to run queue
+	CPU 2: Dispatched process  2
 Process #2
 CALC
-	CPU 2: Put process  1 to run queue
-	CPU 2: Dispatched process  1
+Process #3
+	CPU 0: Put process  1 to run queue
+	CPU 0: Dispatched process  1
 Process #1
 ALLOC
 FOUND FREE RG
-Time slot   5
-Process #2
-CALC
-Process #3
 ALLOC
 INCREASE NUM PAGE: 1
+	Loaded a process at input/proc/s2, PID: 4 PRIO: 120
+Process #2
+CALC
+	CPU 1: Dispatched process  4
+Process #4
+CALC
 Time slot   6
 Process #1
 WRITE
 write region=1 offset=20 value=100
-print_pgtbl: 0 - 1024	Loaded a process at input/proc/s2, PID: 4 PRIO: 120
-
-00000000: 80000001
-00000004: 80000000
-00000008: 80000003
-00000012: 80000002
-	CPU 0: Put process  2 to run queue
-	CPU 0: Dispatched process  2
-Process #2
-CALC
-	CPU 1: Put process  3 to run queue
-	CPU 1: Dispatched process  3
-Process #3
-FREE
-	CPU 3: Dispatched process  4
-Process #4
-CALC
-Process #3
-ALLOC
-FOUND FREE RG
-Time slot   7
-	CPU 2: Put process  1 to run queue
-	CPU 2: Dispatched process  1
-Process #1
-READ
-read region=1 offset=20 value=100
-print_pgtbl: 0 - 1024	Loaded a process at input/proc/m0s, PID: 5 PRIO: 120
-
-00000000: 80000001
-00000004: 80000000
-00000008: 80000003
-Process #2
-CALC
-00000012: 80000002
-Process #1
-WRITE
-write region=2 offset=20 value=102
 print_pgtbl: 0 - 1024
 00000000: 80000001
 00000004: 80000000
 00000008: 80000003
 00000012: 80000002
-Process #4
-CALC
-Time slot   8
-	CPU 0: Put process  2 to run queue
-	CPU 0: Dispatched process  2
-Process #2
-CALC
-	CPU 1: Put process  3 to run queue
-	CPU 1: Dispatched process  3
+	CPU 3: Put process  3 to run queue
+	CPU 3: Dispatched process  3
 Process #3
 FREE
-	CPU 3: Put process  4 to run queue
-	CPU 3: Dispatched process  5
+	CPU 2: Put process  2 to run queue
+	CPU 2: Dispatched process  2
+Process #2
+CALC
+Process #3
+ALLOC
+FOUND FREE RG
+Process #4
+CALC
+Time slot   7
+	CPU 0: Put process  1 to run queue
+	CPU 0: Dispatched process  1
+Process #1
+READ
+read region=1 offset=20 value=100
+print_pgtbl: 0 - 1024
+00000000: 80000001
+00000004: 80000000
+00000008: 80000003
+00000012: 80000002
+	Loaded a process at input/proc/m0s, PID: 5 PRIO: 120
+	CPU 3: Put process  3 to run queue
+	CPU 3: Dispatched process  3
+Process #3
+FREE
+Time slot   8
+	CPU 1: Put process  4 to run queue
+	CPU 1: Dispatched process  5
 Process #5
 ALLOC
+Process #1
+WRITE
+write region=2 offset=20 value=102
+print_pgtbl: 0 - 1024Process #2
 INCREASE NUM PAGE: 2
-	CPU 2: Put process  1 to run queue
-	CPU 2: Dispatched process  4
-Process #4
 CALC
+
+00000000: 80000001
+00000004: 80000000
+00000008: 80000003
+00000012: 80000002
+Error: write in unallocated region !
 	Loaded a process at input/proc/p1s, PID: 6 PRIO: 15
-Time slot   9
-Process #2
-CALC
 Process #3
 FREE
+	CPU 2: Put process  2 to run queue
+	CPU 2: Dispatched process  6
+Process #6
+CALC
 Process #5
 ALLOC
 INCREASE NUM PAGE: 1
-Process #4
-CALC
-	CPU 1: Put process  3 to run queue
-	CPU 1: Dispatched process  6
-Process #6
-CALC
-Time slot  10
-	CPU 0: Put process  2 to run queue
-	CPU 0: Dispatched process  3
-Process #3
-FREE
-	CPU 3: Put process  5 to run queue
-	CPU 3: Dispatched process  2
+Time slot   9
+	CPU 0: Put process  1 to run queue
+	CPU 0: Dispatched process  2
 Process #2
 CALC
-Time slot  11
-	CPU 2: Put process  4 to run queue
-	Loaded a process at input/proc/s0, PID: 7 PRIO: 38
-	CPU 2: Dispatched process  5
-Process #5
-FREE
 Process #6
 CALC
+	CPU 3: Put process  3 to run queue
+	CPU 3: Dispatched process  3
 Process #3
 FREE
+	CPU 1: Put process  5 to run queue
+Time slot  10
+	CPU 1: Dispatched process  5
+Process #5
+FREE
+Process #2
+CALC
+	Loaded a process at input/proc/s0, PID: 7 PRIO: 38
+Process #3
+FREE
+	CPU 2: Put process  6 to run queue
+	CPU 2: Dispatched process  6
+Process #6
+CALC
 Process #5
 ALLOC
 FOUND FREE RG
-Process #2
-CALC
-Time slot  12
-	CPU 0: Processed  3 has finished
+Time slot  11
+	CPU 0: Put process  2 to run queue
 	CPU 0: Dispatched process  7
 Process #7
 CALC
-	CPU 1: Put process  6 to run queue
-	CPU 1: Dispatched process  6
 Process #6
 CALC
-	CPU 3: Put process  2 to run queue
-	CPU 3: Dispatched process  2
+	CPU 1: Put process  5 to run queue
+	CPU 1: Dispatched process  2
 Process #2
 CALC
-	CPU 2: Put process  5 to run queue
-	CPU 2: Dispatched process  5
+Time slot  12
+Process #7
+CALC
+	CPU 3: Processed  3 has finished
+	CPU 3: Dispatched process  5
 Process #5
 WRITE
 write region=1 offset=20 value=102
@@ -171,15 +164,6 @@ print_pgtbl: 0 - 768
 00000000: 80000008
 00000004: 80000007
 00000008: 80000009
-Process #6
-CALC
-Time slot  13
-Process #7
-CALC
-	CPU 3: Processed  2 has finished
-	CPU 3: Dispatched process  4
-Process #4
-CALC
 Process #5
 WRITE
 write region=2 offset=1000 value=1
@@ -187,19 +171,20 @@ print_pgtbl: 0 - 768
 00000000: 80000008
 00000004: 80000007
 00000008: 80000009
-	CPU 1: Put process  6 to run queue
-	CPU 1: Dispatched process  6
+Error: write in unallocated region !
+	CPU 2: Put process  6 to run queue
+	CPU 2: Dispatched process  6
 Process #6
 CALC
-Time slot  14
+Time slot  13
+Process #2
+CALC
 	CPU 0: Put process  7 to run queue
 	CPU 0: Dispatched process  7
 Process #7
 CALC
-Process #4
-CALC
-	CPU 2: Put process  5 to run queue
-	CPU 2: Dispatched process  5
+	CPU 3: Put process  5 to run queue
+	CPU 3: Dispatched process  5
 Process #5
 WRITE
 write region=0 offset=0 value=0
@@ -209,31 +194,39 @@ print_pgtbl: 0 - 768
 00000008: 80000009
 Process #6
 CALC
-Time slot  15
+Time slot  14
 Process #7
+	CPU 1: Put process  2 to run queue
+	CPU 1: Dispatched process  2
+Process #2
 CALC
-	CPU 3: Put process  4 to run queue
+CALC
+	CPU 3: Processed  5 has finished
 	CPU 3: Dispatched process  4
 Process #4
 CALC
-	CPU 2: Processed  5 has finished
-	CPU 2: Dispatched process  1
+	CPU 2: Put process  6 to run queue
+	CPU 2: Dispatched process  6
+Process #6
+CALC
+Time slot  15
+	CPU 0: Put process  7 to run queue
+	CPU 1: Processed  2 has finished
+	CPU 1: Dispatched process  1
 Process #1
 READ
-read region=2 offset=20 value=102
+ERROR IN READ PARTread region=2 offset=20 value=-106
 print_pgtbl: 0 - 1024
 00000000: 80000001
 00000004: 80000000
 00000008: 80000003
 00000012: 80000002
-	Loaded a process at input/proc/s1, PID: 8 PRIO: 0
-	CPU 1: Put process  6 to run queue
-	CPU 1: Dispatched process  8
-Process #8
+	CPU 0: Dispatched process  7
+Process #7
 CALC
-Time slot  16
-	CPU 0: Put process  7 to run queue
-	CPU 0: Dispatched process  6
+	Loaded a process at input/proc/s1, PID: 8 PRIO: 0
+Process #4
+CALC
 Process #6
 CALC
 Process #1
@@ -244,98 +237,105 @@ print_pgtbl: 0 - 1024
 00000004: 80000000
 00000008: 80000003
 00000012: 80000002
-Time slot  17
-Process #4
-CALC
-Process #8
-CALC
-Process #6
+Error: write in unallocated region !
+Time slot  16
+Process #7
 CALC
 	CPU 3: Put process  4 to run queue
-	CPU 3: Dispatched process  7
-Process #7
+	CPU 3: Dispatched process  8
+Process #8
 CALC
-	CPU 2: Processed  1 has finished
-	CPU 2: Dispatched process  4
+	CPU 1: Processed  1 has finished
+	CPU 1: Dispatched process  4
 Process #4
 CALC
-	CPU 1: Put process  8 to run queue
+Time slot  17
+	CPU 2: Put process  6 to run queue
+	CPU 2: Dispatched process  6
+Process #6
+CALC
+	CPU 0: Put process  7 to run queue
+	CPU 0: Dispatched process  7
+Process #7
+CALC
+Process #8
+CALC
+Process #4
+CALC
 Time slot  18
-	CPU 1: Dispatched process  8
-Process #8
-CALC
-	CPU 0: Put process  6 to run queue
-	CPU 0: Dispatched process  6
 Process #6
 CALC
 Process #7
 CALC
-Process #4
-CALC
+	CPU 3: Put process  8 to run queue
+	CPU 3: Dispatched process  8
 Process #8
 CALC
+	CPU 2: Processed  6 has finished
+	CPU 2 stopped
 Time slot  19
-Process #6
-CALC
-	CPU 3: Put process  7 to run queue
-	CPU 3: Dispatched process  7
+	CPU 0: Put process  7 to run queue
+	CPU 0: Dispatched process  7
 Process #7
 CALC
-	CPU 2: Put process  4 to run queue
-	CPU 2: Dispatched process  4
+	CPU 1: Put process  4 to run queue
+	CPU 1: Dispatched process  4
 Process #4
+CALC
+Process #8
 CALC
 Time slot  20
-	CPU 1: Put process  8 to run queue
-	CPU 1: Dispatched process  8
-Process #8
-CALC
-	CPU 0: Processed  6 has finished
-	CPU 0 stopped
 Process #7
 CALC
+Process #4
+CALC
+	CPU 3: Put process  8 to run queue
+	CPU 3: Dispatched process  8
+Process #8
+CALC
+	CPU 1: Put process  4 to run queue
+	CPU 1: Dispatched process  4
 Process #4
 CALC
 Time slot  21
-Process #8
-CALC
-	CPU 3: Put process  7 to run queue
-	CPU 3: Dispatched process  7
+	CPU 0: Put process  7 to run queue
+	CPU 0: Dispatched process  7
 Process #7
 CALC
-	CPU 2: Processed  4 has finished
-	CPU 2 stopped
+Process #4
+CALC
 Time slot  22
-	CPU 1: Put process  8 to run queue
-	CPU 1: Dispatched process  8
+Process #7
+CALC
 Process #8
 CALC
-Process #7
+	CPU 1: Put process  4 to run queue
+	CPU 1: Dispatched process  4
+Process #4
 CALC
 Time slot  23
-	CPU 1: Processed  8 has finished
-	CPU 1 stopped
-Time slot  24
-	CPU 3: Put process  7 to run queue
-	CPU 3: Dispatched process  7
+	CPU 3: Put process  8 to run queue
+	CPU 3: Dispatched process  8
+Process #8
+CALC
+	CPU 0: Put process  7 to run queue
+	CPU 0: Dispatched process  7
 Process #7
 CALC
+Time slot  24
+Process #4
+CALC
+	CPU 3: Processed  8 has finished
+Process #7
+CALC
+	CPU 3 stopped
+	CPU 1: Processed  4 has finished
 Time slot  25
+	CPU 1 stopped
+	CPU 0: Put process  7 to run queue
+	CPU 0: Dispatched process  7
 Process #7
 CALC
 Time slot  26
-	CPU 3: Put process  7 to run queue
-	CPU 3: Dispatched process  7
-Process #7
-CALC
-Time slot  27
-Process #7
-CALC
-Time slot  28
-	CPU 3: Put process  7 to run queue
-	CPU 3: Dispatched process  7
-Process #7
-CALC
-Time slot  29
-	CPU 3: Processed  7 has finished
-	CPU 3 stopped
+	CPU 0: Processed  7 has finished
+	CPU 0 stopped

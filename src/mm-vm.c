@@ -87,7 +87,6 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
     printf("FOUND FREE RG\n");
     caller->mm->symrgtbl[rgid].rg_start = rgnode.rg_start;
     caller->mm->symrgtbl[rgid].rg_end = rgnode.rg_end;
-
     *alloc_addr = rgnode.rg_start;
 
     return 0;
@@ -180,23 +179,18 @@ int pgfree_data(struct pcb_t *proc, uint32_t reg_index)
 // int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
 // {
 //   uint32_t pte = mm->pgd[pgn];
-
 //   if (!PAGING_PAGE_PRESENT(pte))
 //   { /* Page is not online, make it actively living */
 //     printf("SWAPPINGGGG\n");
 //     int vicpgn, swpfpn;
 //     // int vicfpn;
 //     // uint32_t vicpte;
-
 //     int tgtfpn = PAGING_SWP(pte); // the target frame storing our variable
-
 //     /* TODO: Play with your paging theory here */
 //     /* Find victim page */
 //     find_victim_page(caller->mm, &vicpgn);
-
 //     /* Get free frame in MEMSWP */
 //     MEMPHY_get_freefp(caller->active_mswp, &swpfpn);
-
 //     /* Do swap frame from MEMRAM to MEMSWP and vice versa*/
 //     /* Copy victim frame to swap */
 //     // __swap_cp_page();
@@ -204,23 +198,17 @@ int pgfree_data(struct pcb_t *proc, uint32_t reg_index)
 //     /* Copy target frame from swap to mem */
 //     // __swap_cp_page();
 //     __swap_cp_page(caller->active_mswp, tgtfpn, caller->mram, pgn);
-
 //     /* Update page table */
 //     // pte_set_swap() &mm->pgd;
 //     pte_set_swap(&(mm->pgd[vicpgn]), swpfpn, 0);
-
 //     /* Update its online status of the target page */
 //     // pte_set_fpn() & mm->pgd[pgn];
 //     pte_set_fpn(&pte, tgtfpn);
-
 //     enlist_pgn_node(&caller->mm->fifo_pgn, pgn);
 //   }
-
 //   *fpn = PAGING_FPN(pte);
-
 //   return 0;
 // }
-
 // int enlist_framephy_node(struct framephy_struct **fp_list, int fpn){
 //   struct framephy_struct *new_node = malloc(sizeof(struct framephy_struct));
 //   new_node->fpn = fpn;
@@ -255,9 +243,11 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
       /* TODO: Play with your paging theory here */
       /* Find victim page */
       if (find_victim_page(caller->mm, &vicpgn) == -1)
+      //if (find_victim_page(global_pgn, &vicpgn) == -1)
         printf("Process %d: No victim page found\n", caller->pid);
 
       vicfpn = GETVAL(caller->mm->pgd[vicpgn], PAGING_PTE_FPN_MASK, 0);
+      //vicfpn = PAGING_FPN(mm->pgd[vicpgn]);
       /* Get free frame in MEMSWP */
 
       if (MEMPHY_get_freefp(caller->active_mswp, &swpfpn) == -1)
@@ -267,6 +257,9 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
       /* Copy victim frame to swap */
       __swap_cp_page(caller->mram, vicfpn, caller->active_mswp, swpfpn);
       __swap_cp_page(caller->active_mswp, tgtfpn, caller->mram, vicfpn);
+
+      // __swap_cp_page(caller->mram, PAGING_FPN(mm->pgd[vicpgn]), caller->active_mswp, swpfpn);
+      // __swap_cp_page(caller->active_mswp, tgtfpn, caller->mram, PAGING_FPN(mm->pgd[vicpgn]));
       // enlist_framephy_node(&caller->active_mswp->free_fp_list, tgtfpn);
       MEMPHY_put_freefp(caller->active_mswp, tgtfpn);
 
@@ -278,6 +271,7 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
     enlist_pgn_node(&caller->mm->fifo_pgn, pgn);
     enlist_pgn_node(&global_pgn, pgn);
   }
+  //*fpn = PAGING_FPN(pte);
   *fpn = GETVAL(mm->pgd[pgn], PAGING_PTE_FPN_MASK, 0);
   return 0;
 }
@@ -343,7 +337,17 @@ int __read(struct pcb_t *caller, int vmaid, int rgid, int offset, BYTE *data)
   struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, vmaid);
 
   if (currg == NULL || cur_vma == NULL) /* Invalid memory identify */
+  {
+    printf("ERROR IN READ PART");
     return -1;
+  }
+
+  if (currg->rg_start + offset > currg->rg_end)
+  {
+    printf("ERROR IN READ PART");
+    return -1;
+  }
+    
 
   pg_getval(caller->mm, currg->rg_start + offset, data, caller);
 
@@ -387,7 +391,15 @@ int __write(struct pcb_t *caller, int vmaid, int rgid, int offset, BYTE value)
   struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, vmaid);
 
   if (currg == NULL || cur_vma == NULL) /* Invalid memory identify */
+  {
+    printf("ERROR IN WRITE PART !\n");
     return -1;
+  }
+  if(currg->rg_start + offset > currg->rg_end)
+  {
+    printf("Error: write in unallocated region !\n");
+    return -1;
+  }
 
   pg_setval(caller->mm, currg->rg_start + offset, value, caller);
 
@@ -516,7 +528,7 @@ int inc_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz)
 
   /* The obtained vm area (only)
    * now will be alloc real ram region */
-  cur_vma->vm_end += inc_sz;
+  cur_vma->vm_end = cur_vma->vm_end + inc_sz;
   printf("INCREASE NUM PAGE: %d\n", incnumpage);
   //if (vm_map_ram(caller, area->rg_start, area->rg_end, old_end, incnumpage, newrg) < 0)
   if (vm_map_ram(caller, cur_vma->vm_start, cur_vma->vm_end, old_end, incnumpage, newrg) < 0)
@@ -544,7 +556,8 @@ int find_victim_page(struct mm_struct *mm, int *retpgn)
   if (pg->pg_next == NULL)
   {
     *retpgn = pg->pgn;
-    mm->fifo_pgn = NULL;
+    //mm->fifo_pgn = NULL;
+    global_pgn = NULL;
     free(pg);
     return 0;
   }
