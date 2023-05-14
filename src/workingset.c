@@ -35,22 +35,22 @@ void put_workingset(struct WorkingSet *working_set, int pgn)
  */
 int is_in_working_set(struct WorkingSet *working_set, int pgn)
 {
-    printf("WORKING SET: \n");
+    // printf("WORKING SET: \n");
     for (int i = 0; i < working_set->max_size; i++)
     {
-        printf("%d, ", working_set->working_set_arr[i]);
+        // printf("%d, ", working_set->working_set_arr[i]);
         if (working_set->working_set_arr[i] == -1)
             return 0;
         if (pgn == working_set->working_set_arr[i])
             return 1;
     }
-    printf("\n");
+    // printf("\n");
 
     return -1;
 }
 
 void put_sleep(struct pcb_t *proc)
-{   
+{
     /* Nothing in the working set - Return */
     if (proc->working_set->working_set_arr[proc->working_set->cursor] == -1)
         return;
@@ -70,14 +70,16 @@ void put_sleep(struct pcb_t *proc)
     for (pgit = pgn_start; pgit < pgn_end; pgit++)
     {
         uint32_t pte = proc->mm->pgd[pgit];
-        if (PAGING_PAGE_PRESENT(pte) && PAGING_PAGE_IN_SWAP(pte) && is_in_working_set(proc->working_set, pgit) == -1)
+        if (PAGING_PAGE_PRESENT(pte) && !PAGING_PAGE_IN_SWAP(pte) && is_in_working_set(proc->working_set, pgit) == -1)
         {
-            printf("Put pgn %d to swap\n", pgit);
+            // printf("Put pgn %d to swap\n", pgit);
 
             int swpfpn;
             int ramfpn;
 
             ramfpn = GETVAL(pte, PAGING_PTE_FPN_MASK, 0);
+
+            remove_from_pgn_node_list(&proc->mm->fifo_pgn, pgit);
 
             MEMPHY_get_freefp(proc->active_mswp, &swpfpn);
 
@@ -87,4 +89,31 @@ void put_sleep(struct pcb_t *proc)
             MEMPHY_put_freefp(proc->mram, ramfpn);
         }
     }
+}
+
+void remove_from_pgn_node_list(struct pgn_t **plist, int pgn)
+{
+
+    struct pgn_t *pg = *plist;
+    if (pg->pgn == pgn)
+    {
+        *plist = pg->pg_next;
+        free(pg);
+        return;
+    }
+
+    while (pg != NULL && pg->pg_next != NULL)
+    {
+        if (pg->pg_next->pgn == pgn)
+            break;
+        pg = pg->pg_next;
+    }
+
+    struct pgn_t *target = pg->pg_next;
+    if (target == NULL)
+        return;
+
+    pg->pg_next = target->pg_next;
+
+    free(target);
 }

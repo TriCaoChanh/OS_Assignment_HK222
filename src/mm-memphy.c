@@ -147,8 +147,9 @@ int MEMPHY_get_freefp(struct memphy_struct *mp, int *retfpn)
 
    struct framephy_struct *fp = mp->free_fp_list;
 
-   if (fp == NULL){
-      printf("NO FREE FRAME IN MEMPHY\n");
+   if (fp == NULL)
+   {
+      // printf("NO FREE FRAME IN MEMPHY\n");
       // fg = mp->used_fp_list;
       pthread_mutex_unlock(&mem_lock);
       return -1;
@@ -172,7 +173,7 @@ int MEMPHY_dump(struct memphy_struct *mp)
    /*TODO dump memphy contnt mp->storage
     *     for tracing the memory content
     */
-   
+   // print_list_fp(mp->used_fp_list);
 
    return 0;
 }

@@ -66,15 +66,15 @@ int run(struct pcb_t *proc)
 	struct inst_t ins = proc->code->text[proc->pc];
 	proc->pc++;
 	int stat = 1;
-	printf("Process #%d\n", proc->pid);
+	// printf("Process #%d\n", proc->pid);
 	switch (ins.opcode)
 	{
 	case CALC:
-		printf("CALC\n");
+		// printf("CALC\n");
 		stat = calc(proc);
 		break;
 	case ALLOC:
-		printf("ALLOC\n");
+		// printf("ALLOC\n");
 #ifdef MM_PAGING
 		stat = pgalloc(proc, ins.arg_0, ins.arg_1);
 
@@ -83,7 +83,7 @@ int run(struct pcb_t *proc)
 #endif
 		break;
 	case FREE:
-		printf("FREE\n");
+		// printf("FREE\n");
 #ifdef MM_PAGING
 		stat = pgfree_data(proc, ins.arg_0);
 #else
@@ -91,7 +91,7 @@ int run(struct pcb_t *proc)
 #endif
 		break;
 	case READ:
-		printf("READ\n");
+		// printf("READ\n");
 #ifdef MM_PAGING
 		stat = pgread(proc, ins.arg_0, ins.arg_1, ins.arg_2);
 #else
@@ -99,7 +99,7 @@ int run(struct pcb_t *proc)
 #endif
 		break;
 	case WRITE:
-		printf("WRITE\n");
+		// printf("WRITE\n");
 #ifdef MM_PAGING
 		stat = pgwrite(proc, ins.arg_0, ins.arg_1, ins.arg_2);
 #else

@@ -86,7 +86,7 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
 
   if (get_free_vmrg_area(caller, vmaid, size, &rgnode) == 0)
   {
-    printf("FOUND FREE RG\n");
+    // printf("FOUND FREE RG\n");
     caller->mm->symrgtbl[rgid].rg_start = rgnode.rg_start;
     caller->mm->symrgtbl[rgid].rg_end = rgnode.rg_end;
 
@@ -132,17 +132,6 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
  */
 int __free(struct pcb_t *caller, int vmaid, int rgid)
 {
-  // struct vm_rg_struct rgnode;
-
-  // if (rgid < 0 || rgid > PAGING_MAX_SYMTBL_SZ)
-  //   return -1;
-
-  // /* TODO: Manage the collect freed region to freerg_list */
-  // rgnode = caller->mm->symrgtbl[rgid];
-  // /*enlist the obsoleted memory region */
-  // enlist_vm_freerg_list(caller->mm, rgnode);
-  // return 0;
-
   struct vm_rg_struct *rgnode = (struct vm_rg_struct *)malloc(sizeof(struct vm_rg_struct));
 
   if (rgid < 0 || rgid > PAGING_MAX_SYMTBL_SZ)
@@ -176,7 +165,6 @@ int pgalloc(struct pcb_t *proc, uint32_t size, uint32_t reg_index)
  *@size: allocated size
  *@reg_index: memory region ID (used to identify variable in symbole table)
  */
-
 int pgfree_data(struct pcb_t *proc, uint32_t reg_index)
 {
   return __free(proc, 0, reg_index);
@@ -289,7 +277,7 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
   }
 
   *fpn = GETVAL(mm->pgd[pgn], PAGING_PTE_FPN_MASK, 0);
-  
+
   put_workingset(caller->working_set, pgn);
   return 0;
 }
@@ -524,7 +512,7 @@ int inc_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz)
   // cur_vma->vm_end += inc_sz;
   cur_vma->vm_end += inc_amt;
 
-  printf("INCREASE NUM PAGE: %d\n", incnumpage);
+  // printf("INCREASE NUM PAGE: %d\n", incnumpage);
   // if (vm_map_ram(caller, area->rg_start, area->rg_end,
   //                old_end, incnumpage, newrg) < 0)
   if (vm_map_ram(caller, 0, 0,
@@ -542,9 +530,10 @@ int inc_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz)
 int find_victim_page(struct mm_struct *mm, int *retpgn)
 {
   struct pgn_t *pg = mm->fifo_pgn;
-  printf("Finding victim page\n");
+  // printf("Finding victim page\n");
   /* TODO: Implement the theorical mechanism to find the victim page */
-  if (pg == NULL){
+  if (pg == NULL)
+  {
     printf("CANNOT FIND ANY PAGE\n");
     return -1;
   }
@@ -563,7 +552,7 @@ int find_victim_page(struct mm_struct *mm, int *retpgn)
   *retpgn = pg->pg_next->pgn;
   free(pg->pg_next);
   pg->pg_next = NULL;
-  
+
   // mm->fifo_pgn = pg->pg_next;
 
   return 0;
