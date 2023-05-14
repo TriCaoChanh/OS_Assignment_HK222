@@ -1,9 +1,9 @@
-
 #include "cpu.h"
 #include "timer.h"
 #include "sched.h"
 #include "loader.h"
 #include "mm.h"
+#include "workingset.h"
 
 #include <pthread.h>
 #include <stdio.h>
@@ -53,6 +53,9 @@ static void *cpu_routine(void *args)
 	struct pcb_t *proc = NULL;
 	while (1)
 	{
+		// All cpu must wait until timeslot is print
+		while (timer_id->check == 0)
+			;
 		/* Check the status of current process */
 		if (proc == NULL)
 		{
@@ -79,6 +82,10 @@ static void *cpu_routine(void *args)
 			/* The process has done its job in current time slot */
 			printf("\tCPU %d: Put process %2d to run queue\n",
 				   id, proc->pid);
+
+			/* swap out some pages-frames not in the working set for other processes */
+			put_sleep(proc);
+
 			put_proc(proc);
 			proc = get_proc();
 		}
@@ -141,6 +148,8 @@ static void *ld_routine(void *args)
 		proc->mram = mram;
 		proc->mswp = mswp;
 		proc->active_mswp = active_mswp;
+
+		init_workingset(proc);
 #endif
 		printf("\tLoaded a process at %s, PID: %d PRIO: %ld\n",
 			   ld_processes.path[i], proc->pid, ld_processes.prio[i]);

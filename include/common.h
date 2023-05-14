@@ -63,6 +63,14 @@ struct page_table_t {
 	int size;	// Number of row in the first layer
 };
 
+struct WorkingSet
+{
+	int *working_set_arr;
+
+	int max_size;
+	int cursor;
+};
+
 /* PCB, describe information about a process */
 struct pcb_t {
 	uint32_t pid;	// PID
@@ -80,6 +88,8 @@ struct pcb_t {
 	struct memphy_struct *mram;
 	struct memphy_struct **mswp;
 	struct memphy_struct *active_mswp;
+
+	struct WorkingSet *working_set;
 #endif
 	struct page_table_t * page_table; // Page table
 	uint32_t bp;	// Break pointer

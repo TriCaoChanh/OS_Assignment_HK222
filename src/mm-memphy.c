@@ -147,8 +147,12 @@ int MEMPHY_get_freefp(struct memphy_struct *mp, int *retfpn)
 
    struct framephy_struct *fp = mp->free_fp_list;
 
-   if (fp == NULL)
+   if (fp == NULL){
+      printf("NO FREE FRAME IN MEMPHY\n");
+      // fg = mp->used_fp_list;
+      pthread_mutex_unlock(&mem_lock);
       return -1;
+   }
 
    *retfpn = fp->fpn;
    mp->free_fp_list = fp->fp_next;
@@ -184,6 +188,23 @@ int MEMPHY_put_freefp(struct memphy_struct *mp, int fpn)
    newnode->fpn = fpn;
    newnode->fp_next = fp;
    mp->free_fp_list = newnode;
+
+   pthread_mutex_unlock(&mem_lock);
+
+   return 0;
+}
+
+int MEMPHY_put_usefp(struct memphy_struct *mp, int fpn)
+{
+   pthread_mutex_lock(&mem_lock);
+
+   struct framephy_struct *fp = mp->used_fp_list;
+   struct framephy_struct *newnode = malloc(sizeof(struct framephy_struct));
+
+   /* Create new node with value fpn */
+   newnode->fpn = fpn;
+   newnode->fp_next = fp;
+   mp->used_fp_list = newnode;
 
    pthread_mutex_unlock(&mem_lock);
 

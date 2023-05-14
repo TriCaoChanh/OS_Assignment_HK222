@@ -6,6 +6,8 @@
 
 #include "string.h"
 #include "mm.h"
+#include "workingset.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -106,7 +108,7 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
   /* TODO INCREASE THE LIMIT
    * inc_vma_limit(caller, vmaid, inc_sz)
    */
-  if (inc_vma_limit(caller, vmaid, inc_sz) < 0)
+  if (inc_vma_limit(caller, vmaid, size) < 0)
     return -1;
 
   /*Successful increase limit */
@@ -117,6 +119,7 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
 
   // TRI THEM 1 DONG
   cur_vma->sbrk = old_sbrk + inc_sz;
+  // cur_vma->sbrk = old_sbrk + size;
   return 0;
 }
 
@@ -129,15 +132,28 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
  */
 int __free(struct pcb_t *caller, int vmaid, int rgid)
 {
-  struct vm_rg_struct rgnode;
+  // struct vm_rg_struct rgnode;
+
+  // if (rgid < 0 || rgid > PAGING_MAX_SYMTBL_SZ)
+  //   return -1;
+
+  // /* TODO: Manage the collect freed region to freerg_list */
+  // rgnode = caller->mm->symrgtbl[rgid];
+  // /*enlist the obsoleted memory region */
+  // enlist_vm_freerg_list(caller->mm, rgnode);
+  // return 0;
+
+  struct vm_rg_struct *rgnode = (struct vm_rg_struct *)malloc(sizeof(struct vm_rg_struct));
 
   if (rgid < 0 || rgid > PAGING_MAX_SYMTBL_SZ)
     return -1;
 
   /* TODO: Manage the collect freed region to freerg_list */
-  rgnode = caller->mm->symrgtbl[rgid];
+  rgnode->rg_start = caller->mm->symrgtbl[rgid].rg_start;
+  rgnode->rg_end = caller->mm->symrgtbl[rgid].rg_end;
+
   /*enlist the obsoleted memory region */
-  enlist_vm_freerg_list(caller->mm, rgnode);
+  enlist_vm_rg_node(&caller->mm->mmap->vm_freerg_list, rgnode);
 
   return 0;
 }
@@ -271,7 +287,10 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
     }
     enlist_pgn_node(&caller->mm->fifo_pgn, pgn);
   }
+
   *fpn = GETVAL(mm->pgd[pgn], PAGING_PTE_FPN_MASK, 0);
+  
+  put_workingset(caller->working_set, pgn);
   return 0;
 }
 
@@ -491,20 +510,24 @@ int inc_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz)
   struct vm_rg_struct *newrg = malloc(sizeof(struct vm_rg_struct));
   int inc_amt = PAGING_PAGE_ALIGNSZ(inc_sz);
   int incnumpage = inc_amt / PAGING_PAGESZ;
-  struct vm_rg_struct *area = get_vm_area_node_at_brk(caller, vmaid, inc_sz, inc_amt);
+  // struct vm_rg_struct *area = get_vm_area_node_at_brk(caller, vmaid, inc_sz, inc_amt);
   struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, vmaid);
 
   int old_end = cur_vma->vm_end;
 
   /*Validate overlap of obtained region */
-  if (validate_overlap_vm_area(caller, vmaid, area->rg_start, area->rg_end) < 0)
-    return -1; /*Overlap and failed allocation */
+  // if (validate_overlap_vm_area(caller, vmaid, area->rg_start, area->rg_end) < 0)
+  //   return -1; /*Overlap and failed allocation */
 
   /* The obtained vm area (only)
    * now will be alloc real ram region */
-  cur_vma->vm_end += inc_sz;
+  // cur_vma->vm_end += inc_sz;
+  cur_vma->vm_end += inc_amt;
+
   printf("INCREASE NUM PAGE: %d\n", incnumpage);
-  if (vm_map_ram(caller, area->rg_start, area->rg_end,
+  // if (vm_map_ram(caller, area->rg_start, area->rg_end,
+  //                old_end, incnumpage, newrg) < 0)
+  if (vm_map_ram(caller, 0, 0,
                  old_end, incnumpage, newrg) < 0)
     return -1; /* Map the memory to MEMRAM */
 
@@ -519,10 +542,12 @@ int inc_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz)
 int find_victim_page(struct mm_struct *mm, int *retpgn)
 {
   struct pgn_t *pg = mm->fifo_pgn;
-
+  printf("Finding victim page\n");
   /* TODO: Implement the theorical mechanism to find the victim page */
-  if (pg == NULL)
+  if (pg == NULL){
+    printf("CANNOT FIND ANY PAGE\n");
     return -1;
+  }
 
   if (pg->pg_next == NULL)
   {
@@ -538,6 +563,7 @@ int find_victim_page(struct mm_struct *mm, int *retpgn)
   *retpgn = pg->pg_next->pgn;
   free(pg->pg_next);
   pg->pg_next = NULL;
+  
   // mm->fifo_pgn = pg->pg_next;
 
   return 0;
