@@ -339,7 +339,11 @@ int __read(struct pcb_t *caller, int vmaid, int rgid, int offset, BYTE *data)
   struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, vmaid);
 
   if (currg == NULL || cur_vma == NULL) /* Invalid memory identify */
+  {
+    printf("Read in invalid region !");
     return -1;
+  }
+    
 
   pg_getval(caller->mm, currg->rg_start + offset, data, caller);
 
@@ -383,7 +387,10 @@ int __write(struct pcb_t *caller, int vmaid, int rgid, int offset, BYTE value)
   struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, vmaid);
 
   if (currg == NULL || cur_vma == NULL) /* Invalid memory identify */
+  {
+    printf("Write in invalid region !");
     return -1;
+  }
 
   pg_setval(caller->mm, currg->rg_start + offset, value, caller);
 
