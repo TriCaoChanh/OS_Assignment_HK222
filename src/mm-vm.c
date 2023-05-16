@@ -221,20 +221,16 @@ int pgfree_data(struct pcb_t *proc, uint32_t reg_index)
 //   return 0;
 // }
 
-// int enlist_framephy_node(struct framephy_struct **fp_list, int fpn){
-//   struct framephy_struct *new_node = malloc(sizeof(struct framephy_struct));
-//   new_node->fpn = fpn;
-//   new_node->fp_next = *fp_list;
-//   new_node->owner = (*fp_list)->owner;
-//   *fp_list = new_node;
-//   return 0;
-// }
-
 int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
 {
   uint32_t pte = mm->pgd[pgn];
 
   if (!PAGING_PAGE_PRESENT(pte))
+  {
+    printf("ACCESS INVALID MEMORY REGION!\n");
+    return -1;
+  }
+  else if (PAGING_PAGE_IN_SWAP(pte))
   { /* Page is not online, make it actively living */
     int tgtfpn = PAGING_SWP(pte);
     int tmpfpn;
@@ -457,7 +453,7 @@ struct vm_rg_struct *get_vm_area_node_at_brk(struct pcb_t *caller, int vmaid, in
   newrg = malloc(sizeof(struct vm_rg_struct));
 
   newrg->rg_start = cur_vma->sbrk;
-  newrg->rg_end = newrg->rg_start + size;
+  newrg->rg_end = cur_vma->vm_end;
 
   return newrg;
 }
@@ -472,18 +468,7 @@ struct vm_rg_struct *get_vm_area_node_at_brk(struct pcb_t *caller, int vmaid, in
 int validate_overlap_vm_area(struct pcb_t *caller, int vmaid, int vmastart, int vmaend)
 {
   /* TODO validate the planned memory area is not overlapped */
-  // printf("Inside validate_overlap_vm_area\n");
-  // struct vm_area_struct *vma = caller->mm->mmap;
-  // if (OVERLAP(vma->vm_start, vma->vm_end, vmastart, vmaend) || INCLUDE(vma->vm_start, vma->vm_end, vmastart, vmaend))
-  // {
-  //   printf("vma->vm_start: %d\n", vma->vm_start);
-  //   printf("vma->vm_end: %d\n", vma->vm_end);
-  //   printf("vmastart: %d\n", vmastart);
-  //   printf("vmaend: %d\n", vmaend);
-  //   printf("OVERLAP!\n");
-  //   return -1;
-  // }
-  // else
+
   return 1;
 }
 
@@ -498,10 +483,16 @@ int inc_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz)
   struct vm_rg_struct *newrg = malloc(sizeof(struct vm_rg_struct));
   int inc_amt = PAGING_PAGE_ALIGNSZ(inc_sz);
   int incnumpage = inc_amt / PAGING_PAGESZ;
-  // struct vm_rg_struct *area = get_vm_area_node_at_brk(caller, vmaid, inc_sz, inc_amt);
+  struct vm_rg_struct *area;
   struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, vmaid);
 
   int old_end = cur_vma->vm_end;
+
+  cur_vma->sbrk = cur_vma->vm_end + inc_sz;
+  cur_vma->vm_end += inc_amt;
+
+  area = get_vm_area_node_at_brk(caller, vmaid, inc_sz, inc_amt);
+  enlist_vm_rg_node(&caller->mm->mmap->vm_freerg_list, area);
 
   /*Validate overlap of obtained region */
   // if (validate_overlap_vm_area(caller, vmaid, area->rg_start, area->rg_end) < 0)
@@ -510,7 +501,6 @@ int inc_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz)
   /* The obtained vm area (only)
    * now will be alloc real ram region */
   // cur_vma->vm_end += inc_sz;
-  cur_vma->vm_end += inc_amt;
 
   // printf("INCREASE NUM PAGE: %d\n", incnumpage);
   // if (vm_map_ram(caller, area->rg_start, area->rg_end,
@@ -530,14 +520,13 @@ int inc_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz)
 int find_victim_page(struct mm_struct *mm, int *retpgn)
 {
   struct pgn_t *pg = mm->fifo_pgn;
-  // printf("Finding victim page\n");
-  /* TODO: Implement the theorical mechanism to find the victim page */
   if (pg == NULL)
   {
     printf("CANNOT FIND ANY PAGE\n");
     return -1;
   }
 
+  // There is only 1 page online
   if (pg->pg_next == NULL)
   {
     *retpgn = pg->pgn;
@@ -546,14 +535,13 @@ int find_victim_page(struct mm_struct *mm, int *retpgn)
     return 0;
   }
 
+  // Traverse the list
   while (pg->pg_next && pg->pg_next->pg_next)
     pg = pg->pg_next;
 
   *retpgn = pg->pg_next->pgn;
   free(pg->pg_next);
   pg->pg_next = NULL;
-
-  // mm->fifo_pgn = pg->pg_next;
 
   return 0;
 }
@@ -610,6 +598,7 @@ int get_free_vmrg_area(struct pcb_t *caller, int vmaid, int size, struct vm_rg_s
           rgit->rg_next = NULL;
         }
       }
+      break; // Found a fit region
     }
     else
     {

@@ -5,7 +5,7 @@
 void init_workingset(struct pcb_t *proc)
 {
     proc->working_set = malloc(sizeof(struct WorkingSet));
-    proc->working_set->max_size = proc->mram->maxsz / (PAGING_PAGESZ * 4);
+    proc->working_set->max_size = proc->mram->maxsz / (PAGING_PAGESZ * 2);
     proc->working_set->working_set_arr = malloc(sizeof(int) * proc->working_set->max_size);
 
     for (int i = 0; i < proc->working_set->max_size; i++)
@@ -29,7 +29,7 @@ void put_workingset(struct WorkingSet *working_set, int pgn)
 
 /**
  * @brief
- *  Return 0: Normal.
+ *  Return 0: Working Set is not full.
  *  Return 1: In Working set.
  *  Return -1: Not in Working set.
  */
@@ -51,7 +51,13 @@ int is_in_working_set(struct WorkingSet *working_set, int pgn)
 
 void put_sleep(struct pcb_t *proc)
 {
-    /* Nothing in the working set - Return */
+#ifndef WORKING_SET
+    return;
+#endif
+    /* Working Set is not full - Return */
+    if (proc->working_set->working_set_arr[0] != -1)
+        print_working_set(proc->working_set);
+
     if (proc->working_set->working_set_arr[proc->working_set->cursor] == -1)
         return;
 
@@ -72,7 +78,7 @@ void put_sleep(struct pcb_t *proc)
         uint32_t pte = proc->mm->pgd[pgit];
         if (PAGING_PAGE_PRESENT(pte) && !PAGING_PAGE_IN_SWAP(pte) && is_in_working_set(proc->working_set, pgit) == -1)
         {
-            // printf("Put pgn %d to swap\n", pgit);
+            printf("\t\tPut pgn %d to swap\n", pgit);
 
             int swpfpn;
             int ramfpn;
@@ -93,7 +99,6 @@ void put_sleep(struct pcb_t *proc)
 
 void remove_from_pgn_node_list(struct pgn_t **plist, int pgn)
 {
-
     struct pgn_t *pg = *plist;
     if (pg->pgn == pgn)
     {
@@ -116,4 +121,14 @@ void remove_from_pgn_node_list(struct pgn_t **plist, int pgn)
     pg->pg_next = target->pg_next;
 
     free(target);
+}
+
+void print_working_set(struct WorkingSet *working_set)
+{
+    printf("\t\tWorking set: [ ");
+    for (int i = 0; i < working_set->max_size; i++)
+    {
+        printf("%d ", working_set->working_set_arr[i]);
+    }
+    printf("]\n");
 }

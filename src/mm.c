@@ -138,13 +138,13 @@ int vmap_page_range2(struct pcb_t *caller,           // process call
                      int pgnum,                      // num of mapping page
                      struct framephy_struct *frames, // list of the mapped frames
                      struct vm_rg_struct *ret_rg,    // return mapped region, the real mapped fp
-                     int *frm_loc)
+                     int *frm_loc                    // array of frame location, 0 for RAM, 1 for SWAP
+)
 // no guarantee all given pages are mapped
 {
   uint32_t *pte;
-  // struct framephy_struct *fpit = malloc(sizeof(struct framephy_struct));
-  struct framephy_struct *fpit;
-  // int  fpn;
+  struct framephy_struct *fpit, *temp;
+
   int pgit = 0;
   int pgn = PAGING_PGN(addr);
 
@@ -153,40 +153,25 @@ int vmap_page_range2(struct pcb_t *caller,           // process call
   fpit = frames;
   for (pgit = 0; pgit < pgnum; pgit++)
   {
-    struct framephy_struct *temp = fpit;
+    temp = fpit;
     pte = malloc(sizeof(uint32_t));
     *pte = 0;
-    // pte = &(caller->mm->pgd[pgn + pgit]);
-    // printf("######Frame loc: %d \n",frm_loc[pgit]);
+
     if (frm_loc[pgit] == 0)
     {
-      // init_pte(pte, 1, fpit->fpn, 0, 0, 0, 0); // set in ram
       pte_set_fpn(pte, fpit->fpn);
+      MEMPHY_put_usefp(caller->mram, temp->fpn);
     }
     else
     {
-      // init_pte(pte, 1, 0, 0, 1, 0, fpit->fpn); // set in swap
       pte_set_swap(pte, 0, fpit->fpn);
+      MEMPHY_put_usefp(caller->active_mswp, temp->fpn);
     }
 
     caller->mm->pgd[pgn + pgit] = *pte;
     fpit = fpit->fp_next;
 
-    // temp->fpn = pgn + pgit;
-    if (frm_loc[pgit] == 0)
-      MEMPHY_put_usefp(caller->mram, temp->fpn);
-    else
-      MEMPHY_put_usefp(caller->active_mswp, temp->fpn);
-
-    // update region
-    // struct vm_rg_struct *newrg = malloc(sizeof(struct vm_rg_struct));
-    // newrg->rg_start = addr;
-    // newrg->rg_end = addr + pgit * PAGING_PAGESZ;
-    // newrg->rg_next = ret_rg;
-    // ret_rg = newrg;
-
     enlist_pgn_node(&caller->mm->fifo_pgn, pgn + pgit); // put in the loop to track all the pages
-    // enlist_pgn_node(&global_pgn, pgn + pgit);
 
     free(temp);
     free(pte);
@@ -208,7 +193,6 @@ int vmap_page_range2(struct pcb_t *caller,           // process call
 
 //   for (pgit = 0; pgit < req_pgnum; pgit++)
 //   {
-//     // CODE TRÍ
 //     if (MEMPHY_get_freefp(caller->mram, &fpn) == 0)
 //     {
 //       newfp_str = malloc(sizeof(struct framephy_struct));
@@ -238,6 +222,23 @@ int vmap_page_range2(struct pcb_t *caller,           // process call
 //   return 0;
 // }
 
+void enlist_frm_lst(struct pcb_t *caller, struct framephy_struct **frm_lst, struct framephy_struct *newfp, int fpn)
+{
+  newfp->fpn = fpn;
+  newfp->owner = caller->mm;
+  newfp->fp_next = *frm_lst;
+  *frm_lst = newfp;
+}
+
+/**
+ * @brief Request MEMPHY for some frames
+ *
+ * @param caller pcb_t
+ * @param req_pgnum number of requested pages
+ * @param frm_lst the return frame list
+ * @param frm_loc frame location, 0 for RAM, 1 for SWAP
+ * @return int
+ */
 int alloc_pages_range2(struct pcb_t *caller, int req_pgnum, struct framephy_struct **frm_lst, int *frm_loc)
 {
   int pgit, fpn, swpfpn;
@@ -246,26 +247,21 @@ int alloc_pages_range2(struct pcb_t *caller, int req_pgnum, struct framephy_stru
     struct framephy_struct *newfp = malloc(sizeof(struct framephy_struct));
     if (MEMPHY_get_freefp(caller->mram, &fpn) == 0)
     {
-      newfp->fpn = fpn;
-      newfp->owner = caller->mm;
-      newfp->fp_next = *frm_lst;
-      *frm_lst = newfp;
+      // Successfully alloc some frame in RAM
+      enlist_frm_lst(caller, frm_lst, newfp, fpn);
       frm_loc[req_pgnum - pgit - 1] = 0;
-      // frm_loc[pgit] = 0;
     }
     else
     {
+      // There is no more free frame in RAM
+      // Lazy Swapper: alloc in SWAP, never swaps a page into memory unless page will be needed
       if (MEMPHY_get_freefp(caller->active_mswp, &swpfpn) == 0)
       {
-        newfp->fpn = swpfpn;
-        newfp->owner = caller->mm;
-        newfp->fp_next = *frm_lst;
-        *frm_lst = newfp;
+        enlist_frm_lst(caller, frm_lst, newfp, swpfpn);
         frm_loc[req_pgnum - pgit - 1] = 1;
-        // frm_loc[pgit] = 1;
       }
       else
-        return -3000;
+        return -3000; // No free frame in SWAP
     }
   }
   return 0;
