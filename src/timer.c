@@ -21,11 +21,18 @@ static int timer_stop = 0;
 static void * timer_routine(void * args) {
 	while (!timer_stop) {
 		printf("Time slot %3lu\n", current_time());
+
+		struct timer_id_container_t * temp;
+		/* Allow all cpu to run */
+		for (temp = dev_list; temp != NULL; temp = temp->next){
+			temp->id.time_ctrl = 1;
+		}
+
 		int fsh = 0;
 		int event = 0;
 		/* Wait for all devices have done the job in current
 		 * time slot */
-		struct timer_id_container_t * temp;
+		//struct timer_id_container_t * temp;
 		for (temp = dev_list; temp != NULL; temp = temp->next) {
 			pthread_mutex_lock(&temp->id.event_lock);
 			while (!temp->id.done && !temp->id.fsh) {
@@ -43,6 +50,13 @@ static void * timer_routine(void * args) {
 
 		/* Increase the time slot */
 		_time++;
+
+		struct timer_id_t loader_timer = dev_list->id;
+		// Do not allow all cpu to run
+		for (temp = dev_list; temp != NULL; temp = temp->next){
+			temp->id.time_ctrl = 0;
+		}
+		if (loader_timer.fsh == 0) sleep_cpu();
 		
 		/* Let devices continue their job */
 		for (temp = dev_list; temp != NULL; temp = temp->next) {
@@ -105,6 +119,8 @@ struct timer_id_t * attach_event() {
 		container->id.done = 0;
 		container->id.fsh = 0;
 		container->id.check = 1; //changed time
+		container->id.time_ctrl = 0; // new attribute to control that time slot must show first
+		container->id.cpu_ctrl = 0;
 		pthread_cond_init(&container->id.event_cond, NULL);
 		pthread_mutex_init(&container->id.event_lock, NULL);
 		pthread_cond_init(&container->id.timer_cond, NULL);
@@ -134,6 +150,18 @@ void stop_timer() {
 	}
 }
 
+void wake_up_cpu(){
+	struct timer_id_container_t * temp;
+	for (temp = dev_list; temp != NULL; temp = temp->next){
+		temp->id.cpu_ctrl = 1;
+	}
+}
 
+void sleep_cpu(){
+	struct timer_id_container_t * temp;
+	for (temp = dev_list; temp != NULL; temp = temp->next){
+		temp->id.cpu_ctrl = 0;
+	}
+}
 
 
