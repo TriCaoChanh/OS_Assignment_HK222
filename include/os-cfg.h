@@ -10,7 +10,7 @@
  */
 // #define WORKING_SET 1
 
-#define MM_PAGING 1
+//#define MM_PAGING 1
 // #define MM_FIXED_MEMSZ
 //#define VMDBG 1
 //#define MMDBG 1

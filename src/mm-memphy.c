@@ -173,7 +173,7 @@ int MEMPHY_dump(struct memphy_struct *mp)
    /*TODO dump memphy contnt mp->storage
     *     for tracing the memory content
     */
-   // print_list_fp(mp->used_fp_list);
+   print_list_fp(mp->used_fp_list);
 
    return 0;
 }
@@ -210,6 +210,47 @@ int MEMPHY_put_usefp(struct memphy_struct *mp, int fpn)
    pthread_mutex_unlock(&mem_lock);
 
    return 0;
+}
+
+int MEMPHY_delete_usefp(struct memphy_struct **mp, int fpn)
+{
+   pthread_mutex_lock(&mem_lock);
+
+   struct framephy_struct *current = (*mp)->used_fp_list;
+   struct framephy_struct *prev = NULL;
+
+   while (current != NULL) 
+   {
+      if (current->fpn == fpn) 
+      {
+         if(current == (*mp)->used_fp_list)
+         {
+            (*mp)->used_fp_list = (*mp)->used_fp_list->fp_next;
+            free(current);
+            current = (*mp)->used_fp_list;
+         }
+         else
+         {
+            prev->fp_next = current->fp_next;
+            free(current);
+            current = prev->fp_next;
+         }
+      }
+      else
+      { 
+         prev = current;
+         current = current->fp_next;
+      }
+   }
+   // frame not found in list
+   if (current == NULL) {
+      return -1;
+   }
+
+   pthread_mutex_unlock(&mem_lock);
+
+   return 0;
+
 }
 
 /*

@@ -137,9 +137,20 @@ int __free(struct pcb_t *caller, int vmaid, int rgid)
   if (rgid < 0 || rgid > PAGING_MAX_SYMTBL_SZ)
     return -1;
 
-  /* TODO: Manage the collect freed region to freerg_list */
+  // /* TODO: Manage the collect freed region to freerg_list */
   rgnode->rg_start = caller->mm->symrgtbl[rgid].rg_start;
   rgnode->rg_end = caller->mm->symrgtbl[rgid].rg_end;
+  
+  // int addr = caller->mm->symrgtbl[rgid].rg_start;
+  // int pgn = PAGING_PGN(addr);
+  // int pgnum = (rgnode->rg_end - rgnode->rg_start) / PAGING_PAGESZ;
+  // int pgit = 0;
+  // printf("##### The page number is: %d \n", pgnum);
+  // printf("##### The delete frame number is: %d \n", PAGING_FPN(caller->mm->pgd[pgn + pgit]));
+  // for (pgit = 0; pgit < pgnum; pgit++)
+  // {
+  //   MEMPHY_delete_usefp(&(caller->mram), PAGING_FPN(caller->mm->pgd[pgn + pgit]));
+  // }
 
   /*enlist the obsoleted memory region */
   enlist_vm_rg_node(&caller->mm->mmap->vm_freerg_list, rgnode);
@@ -433,6 +444,7 @@ int free_pcb_memph(struct pcb_t *caller)
     {
       fpn = PAGING_FPN(pte);
       MEMPHY_put_freefp(caller->mram, fpn);
+      //MEMPHY_delete_usefp(caller->mram, fpn);
     }
     else
     {
@@ -512,8 +524,7 @@ int inc_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz)
   // printf("INCREASE NUM PAGE: %d\n", incnumpage);
   // if (vm_map_ram(caller, area->rg_start, area->rg_end,
   //                old_end, incnumpage, newrg) < 0)
-  if (vm_map_ram(caller, 0, 0,
-                 old_end, incnumpage, newrg) < 0)
+  if (vm_map_ram(caller, 0, 0, old_end, incnumpage, newrg) < 0)
     return -1; /* Map the memory to MEMRAM */
 
   return 0;

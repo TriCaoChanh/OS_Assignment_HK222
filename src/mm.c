@@ -226,6 +226,7 @@ void enlist_frm_lst(struct pcb_t *caller, struct framephy_struct **frm_lst, stru
 {
   newfp->fpn = fpn;
   newfp->owner = caller->mm;
+  newfp->pid_owner = caller->pid;
   newfp->fp_next = *frm_lst;
   *frm_lst = newfp;
 }
@@ -396,7 +397,7 @@ int print_list_fp(struct framephy_struct *ifp)
 {
   struct framephy_struct *fp = ifp;
 
-  printf("print_list_fp: ");
+  printf("Print frames list in RAM: ");
   if (fp == NULL)
   {
     printf("NULL list\n");
@@ -405,7 +406,7 @@ int print_list_fp(struct framephy_struct *ifp)
   printf("\n");
   while (fp != NULL)
   {
-    printf("fp[%d]\n", fp->fpn);
+    printf("Frame num[%d]  PID:%d\n", fp->fpn, fp->pid_owner);
     fp = fp->fp_next;
   }
   printf("\n");
