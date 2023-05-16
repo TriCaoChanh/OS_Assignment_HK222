@@ -54,8 +54,10 @@ static void *cpu_routine(void *args)
 	while (1)
 	{
 		// All cpu must wait until timeslot is print
-		while (timer_id->check == 0)
-			;
+		// while (timer_id->check == 0);
+		while(timer_id->time_ctrl == 0);
+		while(timer_id->cpu_ctrl == 0);
+
 		/* Check the status of current process */
 		if (proc == NULL)
 		{
@@ -134,13 +136,20 @@ static void *ld_routine(void *args)
 	printf("ld_routine\n");
 	while (i < num_processes)
 	{
+		/* Timer must wait until timeslot is print for better simulation only */
+		while(timer_id->time_ctrl == 0); 
+
 		struct pcb_t *proc = load(ld_processes.path[i]);
 #ifdef MLQ_SCHED
 		proc->prio = ld_processes.prio[i];
 #endif
 		while (current_time() < ld_processes.start_time[i])
 		{
+			/* CPU must wait until loader has loaded */
+			wake_up_cpu();
 			next_slot(timer_id);
+			/* Timer must wait until timeslot is print for better simulation only */
+			while(timer_id->time_ctrl == 0); 
 		}
 #ifdef MM_PAGING
 		proc->mm = malloc(sizeof(struct mm_struct));
@@ -156,11 +165,14 @@ static void *ld_routine(void *args)
 		add_proc(proc);
 		free(ld_processes.path[i]);
 		i++;
+		/* CPU must wait until loader has loaded */
+		wake_up_cpu();
 		next_slot(timer_id);
 	}
 	free(ld_processes.path);
 	free(ld_processes.start_time);
 	done = 1;
+	wake_up_cpu();
 	detach_event(timer_id);
 	pthread_exit(NULL);
 }
