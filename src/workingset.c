@@ -93,6 +93,7 @@ void put_sleep(struct pcb_t *proc)
             pte_set_swap(&proc->mm->pgd[pgit], 0, swpfpn);
 
             MEMPHY_put_freefp(proc->mram, ramfpn);
+            MEMPHY_delete_usefp(&(proc->mram), ramfpn);
         }
     }
 }

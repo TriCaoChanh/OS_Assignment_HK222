@@ -66,6 +66,7 @@ struct framephy_struct {
 
    /* Resereed for tracking allocated framed */
    struct mm_struct* owner;
+   uint32_t pid_owner;
 };
 
 struct memphy_struct {
