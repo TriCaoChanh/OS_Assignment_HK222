@@ -174,7 +174,6 @@ int MEMPHY_dump(struct memphy_struct *mp)
     *     for tracing the memory content
     */
    print_list_fp(mp->used_fp_list);
-
    return 0;
 }
 
@@ -195,18 +194,17 @@ int MEMPHY_put_freefp(struct memphy_struct *mp, int fpn)
    return 0;
 }
 
-int MEMPHY_put_usefp(struct memphy_struct *mp, int fpn)
+int MEMPHY_put_usefp(struct memphy_struct *mp, int fpn, int pid)
 {
    pthread_mutex_lock(&mem_lock);
-
    struct framephy_struct *fp = mp->used_fp_list;
    struct framephy_struct *newnode = malloc(sizeof(struct framephy_struct));
 
    /* Create new node with value fpn */
    newnode->fpn = fpn;
    newnode->fp_next = fp;
+   newnode->pid_owner = pid;
    mp->used_fp_list = newnode;
-
    pthread_mutex_unlock(&mem_lock);
 
    return 0;
@@ -218,37 +216,45 @@ int MEMPHY_delete_usefp(struct memphy_struct **mp, int fpn)
 
    struct framephy_struct *current = (*mp)->used_fp_list;
    struct framephy_struct *prev = NULL;
-
+   //printf("######## FOUND FRAME %d\n", current->fp_next->fp_next->fpn);
    while (current != NULL) 
    {
       if (current->fpn == fpn) 
       {
+         //printf("######## DELETE FRAME %d\n", current->fpn);
          if(current == (*mp)->used_fp_list)
          {
             (*mp)->used_fp_list = (*mp)->used_fp_list->fp_next;
             free(current);
             current = (*mp)->used_fp_list;
+            pthread_mutex_unlock(&mem_lock);
+            return 0;
          }
          else
          {
             prev->fp_next = current->fp_next;
             free(current);
             current = prev->fp_next;
+            pthread_mutex_unlock(&mem_lock);
+            return 0;
          }
       }
       else
       { 
+         //printf("######## FOUND FRAME %d\n", current->fpn);
          prev = current;
          current = current->fp_next;
       }
    }
    // frame not found in list
-   if (current == NULL) {
+   if (current == NULL) 
+   {
+      printf("NOT FOUND FRAME TO DELETE!!!\n");
+      pthread_mutex_unlock(&mem_lock);
       return -1;
    }
 
    pthread_mutex_unlock(&mem_lock);
-
    return 0;
 
 }

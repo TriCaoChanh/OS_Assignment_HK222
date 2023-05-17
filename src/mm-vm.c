@@ -51,7 +51,7 @@ struct vm_area_struct *get_vma_by_num(struct mm_struct *mm, int vmaid)
   {
     if (pvma == NULL)
       return NULL;
-
+    vmait = pvma->vm_id; // update
     pvma = pvma->vm_next;
   }
 
@@ -86,11 +86,23 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
 
   if (get_free_vmrg_area(caller, vmaid, size, &rgnode) == 0)
   {
-    // printf("FOUND FREE RG\n");
+    //printf("FOUND FREE RG\n");
     caller->mm->symrgtbl[rgid].rg_start = rgnode.rg_start;
     caller->mm->symrgtbl[rgid].rg_end = rgnode.rg_end;
-
     *alloc_addr = rgnode.rg_start;
+
+    int pgn = PAGING_PGN(*alloc_addr);
+    int inc_amt = PAGING_PAGE_ALIGNSZ(rgnode.rg_end - rgnode.rg_start);
+    int incnumpage = inc_amt / PAGING_PAGESZ;
+    int pgit = 0;
+    uint32_t pte;
+    // uint32_t pte = caller->mm->pgd[pgit];
+
+    for (pgit = 0; pgit < incnumpage; pgit++)
+    {
+      pte = caller->mm->pgd[pgit];
+      MEMPHY_put_usefp(caller->mram,  GETVAL(pte, PAGING_PTE_FPN_MASK, 0), caller->pid);
+    }
 
     return 0;
   }
@@ -137,20 +149,29 @@ int __free(struct pcb_t *caller, int vmaid, int rgid)
   if (rgid < 0 || rgid > PAGING_MAX_SYMTBL_SZ)
     return -1;
 
+  struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, vmaid);
+
   // /* TODO: Manage the collect freed region to freerg_list */
   rgnode->rg_start = caller->mm->symrgtbl[rgid].rg_start;
   rgnode->rg_end = caller->mm->symrgtbl[rgid].rg_end;
-  
-  // int addr = caller->mm->symrgtbl[rgid].rg_start;
-  // int pgn = PAGING_PGN(addr);
-  // int pgnum = (rgnode->rg_end - rgnode->rg_start) / PAGING_PAGESZ;
-  // int pgit = 0;
-  // printf("##### The page number is: %d \n", pgnum);
-  // printf("##### The delete frame number is: %d \n", PAGING_FPN(caller->mm->pgd[pgn + pgit]));
-  // for (pgit = 0; pgit < pgnum; pgit++)
-  // {
-  //   MEMPHY_delete_usefp(&(caller->mram), PAGING_FPN(caller->mm->pgd[pgn + pgit]));
-  // }
+
+  caller->mm->symrgtbl[rgid].rg_start = -99;
+  caller->mm->symrgtbl[rgid].rg_end = -99;
+
+  int addr = rgnode->rg_start;
+  int pgn = PAGING_PGN(addr);
+  int inc_amt = PAGING_PAGE_ALIGNSZ(rgnode->rg_end - rgnode->rg_start);
+  int incnumpage = inc_amt / PAGING_PAGESZ;
+  int pgit = 0;
+
+  //MEMPHY_dump(caller->mram);
+  for (pgit = 0; pgit < incnumpage; pgit++)
+  {
+    //printf("##### The delete frame number is: %d \n", GETVAL(caller->mm->pgd[pgn + pgit], PAGING_PTE_FPN_MASK, 0));
+    //printf("%d \n", caller->mram);
+    //printf("##### The mm: %d \n",caller->mm);
+    MEMPHY_delete_usefp(&(caller->mram), GETVAL(caller->mm->pgd[pgn + pgit], PAGING_PTE_FPN_MASK, 0));
+  }
 
   /*enlist the obsoleted memory region */
   enlist_vm_rg_node(&caller->mm->mmap->vm_freerg_list, rgnode);
@@ -248,7 +269,7 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
     if (MEMPHY_get_freefp(caller->mram, &tmpfpn) == 0)
     {
       __swap_cp_page(caller->active_mswp, tgtfpn, caller->mram, tmpfpn);
-
+      MEMPHY_put_usefp(caller->mram, tmpfpn, caller->pid);
       // enlist_framephy_node(&caller->active_mswp->free_fp_list, tgtfpn);
       MEMPHY_put_freefp(caller->active_mswp, tgtfpn);
       pte_set_fpn(&caller->mm->pgd[pgn], tmpfpn);
@@ -403,6 +424,12 @@ int __write(struct pcb_t *caller, int vmaid, int rgid, int offset, BYTE value)
     return -1;
   }
 
+  if(currg->rg_start == -99 && currg->rg_end == -99)
+  {
+    printf("Write in invalid region !!!!\n");
+    return -1;
+  }
+
   pg_setval(caller->mm, currg->rg_start + offset, value, caller);
 
   return 0;
@@ -440,11 +467,11 @@ int free_pcb_memph(struct pcb_t *caller)
   {
     pte = caller->mm->pgd[pagenum];
 
-    if (!PAGING_PAGE_PRESENT(pte))
+    if (!PAGING_PAGE_IN_SWAP(pte))
     {
       fpn = PAGING_FPN(pte);
       MEMPHY_put_freefp(caller->mram, fpn);
-      //MEMPHY_delete_usefp(caller->mram, fpn);
+      MEMPHY_delete_usefp(&(caller->mram), fpn);
     }
     else
     {
