@@ -9,7 +9,6 @@
 #include <pthread.h>
 
 static pthread_mutex_t mem_lock;
-
 /*
  *  MEMPHY_mv_csr - move MEMPHY cursor
  *  @mp: memphy struct
@@ -68,7 +67,6 @@ int MEMPHY_read(struct memphy_struct *mp, int addr, BYTE *value)
 
    return 0;
 }
-
 /*
  *  MEMPHY_seq_write - write MEMPHY device
  *  @mp: memphy struct

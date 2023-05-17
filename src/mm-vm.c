@@ -412,7 +412,9 @@ int pgread(
 #ifdef PAGETBL_DUMP
   print_pgtbl(proc, 0, -1); // print max TBL
 #endif
+#ifdef RAM_DUMP
   MEMPHY_dump(proc->mram);
+#endif
 #endif
 
   return val;
@@ -461,7 +463,9 @@ int pgwrite(
 #ifdef PAGETBL_DUMP
   print_pgtbl(proc, 0, -1); // print max TBL
 #endif
+#ifdef RAM_DUMP
   MEMPHY_dump(proc->mram);
+#endif
 #endif
 
   return __write(proc, 0, destination, offset, data);
