@@ -83,8 +83,8 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
 {
   /*Allocate at the toproof */
   struct vm_rg_struct rgnode;
-
-  if (get_free_vmrg_area(caller, vmaid, size, &rgnode) == 0)
+  int flag;
+  if (get_free_vmrg_area(caller, vmaid, size, &rgnode, &flag) == 0)
   {
     //printf("FOUND FREE RG\n");
     caller->mm->symrgtbl[rgid].rg_start = rgnode.rg_start;
@@ -101,7 +101,17 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
     for (pgit = 0; pgit < incnumpage; pgit++)
     {
       pte = caller->mm->pgd[pgit];
-      MEMPHY_put_usefp(caller->mram,  GETVAL(pte, PAGING_PTE_FPN_MASK, 0), caller->pid);
+      int temp = GETVAL(pte, PAGING_PTE_FPN_MASK, 0);
+      struct framephy_struct* head = caller->mram->used_fp_list;
+      while(head != NULL)
+      {
+        if(head->fpn == temp)
+        {
+          head->status = 1;
+          break;
+        }
+        head = head->fp_next;
+      }
     }
 
     return 0;
@@ -155,8 +165,8 @@ int __free(struct pcb_t *caller, int vmaid, int rgid)
   rgnode->rg_start = caller->mm->symrgtbl[rgid].rg_start;
   rgnode->rg_end = caller->mm->symrgtbl[rgid].rg_end;
 
-  caller->mm->symrgtbl[rgid].rg_start = -99;
-  caller->mm->symrgtbl[rgid].rg_end = -99;
+  caller->mm->symrgtbl[rgid].rg_start = 0;
+  caller->mm->symrgtbl[rgid].rg_end = 0;
 
   int addr = rgnode->rg_start;
   int pgn = PAGING_PGN(addr);
@@ -170,7 +180,9 @@ int __free(struct pcb_t *caller, int vmaid, int rgid)
     //printf("##### The delete frame number is: %d \n", GETVAL(caller->mm->pgd[pgn + pgit], PAGING_PTE_FPN_MASK, 0));
     //printf("%d \n", caller->mram);
     //printf("##### The mm: %d \n",caller->mm);
-    MEMPHY_delete_usefp(&(caller->mram), GETVAL(caller->mm->pgd[pgn + pgit], PAGING_PTE_FPN_MASK, 0));
+    //MEMPHY_delete_usefp(&(caller->mram), GETVAL(caller->mm->pgd[pgn + pgit], PAGING_PTE_FPN_MASK, 0));
+    MEMPHY_setfp_status(&(caller->mram),GETVAL(caller->mm->pgd[pgn + pgit], PAGING_PTE_FPN_MASK, 0), 0);
+
   }
 
   /*enlist the obsoleted memory region */
@@ -270,6 +282,7 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
     {
       __swap_cp_page(caller->active_mswp, tgtfpn, caller->mram, tmpfpn);
       MEMPHY_put_usefp(caller->mram, tmpfpn, caller->pid);
+
       // enlist_framephy_node(&caller->active_mswp->free_fp_list, tgtfpn);
       MEMPHY_put_freefp(caller->active_mswp, tgtfpn);
       pte_set_fpn(&caller->mm->pgd[pgn], tmpfpn);
@@ -295,6 +308,7 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
       __swap_cp_page(caller->mram, vicfpn, caller->active_mswp, swpfpn);
       __swap_cp_page(caller->active_mswp, tgtfpn, caller->mram, vicfpn);
       // enlist_framephy_node(&caller->active_mswp->free_fp_list, tgtfpn);
+      MEMPHY_update_pid(&(caller->mram),vicfpn, caller->pid);
 
       /* Update page table */
       // pte_set_swap() &mm->pgd;
@@ -597,10 +611,10 @@ int find_victim_page(struct mm_struct *mm, int *retpgn)
  *@size: allocated size
  *
  */
-int get_free_vmrg_area(struct pcb_t *caller, int vmaid, int size, struct vm_rg_struct *newrg)
+int get_free_vmrg_area(struct pcb_t *caller, int vmaid, int size, struct vm_rg_struct *newrg, int* flag)
 {
   struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, vmaid);
-
+  *flag = 0;
   struct vm_rg_struct *rgit = cur_vma->vm_freerg_list;
 
   if (rgit == NULL)
@@ -621,6 +635,7 @@ int get_free_vmrg_area(struct pcb_t *caller, int vmaid, int size, struct vm_rg_s
       if (rgit->rg_start + size < rgit->rg_end)
       {
         rgit->rg_start = rgit->rg_start + size;
+        *flag = 1;
       }
       else
       { /*Use up all space, remove current node */
