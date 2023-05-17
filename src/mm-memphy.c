@@ -9,6 +9,7 @@
 #include <pthread.h>
 
 static pthread_mutex_t mem_lock;
+
 /*
  *  MEMPHY_mv_csr - move MEMPHY cursor
  *  @mp: memphy struct
@@ -311,3 +312,4 @@ void MEMPHY_update_pid(struct memphy_struct **mp, int fpn, int pid)
    pthread_mutex_unlock(&mem_lock);
 }
 // #endif
+

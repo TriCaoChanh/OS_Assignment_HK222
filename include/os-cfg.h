@@ -8,7 +8,7 @@
  * For small sized RAM with many processes run concurrently,
  * use Working_set to avoid thrashing
  */
-#define WORKING_SET 1
+//#define WORKING_SET 1
 
 //#define MM_PAGING 1
 // #define MM_FIXED_MEMSZ
