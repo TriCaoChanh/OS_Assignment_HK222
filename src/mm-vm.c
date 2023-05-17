@@ -68,7 +68,7 @@ struct vm_rg_struct *get_symrg_byid(struct mm_struct *mm, int rgid)
   if (rgid < 0 || rgid > PAGING_MAX_SYMTBL_SZ)
     return NULL;
 
-  return &mm->symrgtbl[rgid];
+  return &(mm->symrgtbl[rgid]);
 }
 
 /*__alloc - allocate a region memory
@@ -165,8 +165,8 @@ int __free(struct pcb_t *caller, int vmaid, int rgid)
   rgnode->rg_start = caller->mm->symrgtbl[rgid].rg_start;
   rgnode->rg_end = caller->mm->symrgtbl[rgid].rg_end;
 
-  caller->mm->symrgtbl[rgid].rg_start = 0;
-  caller->mm->symrgtbl[rgid].rg_end = 0;
+  // caller->mm->symrgtbl[rgid].rg_start = -99;
+  // caller->mm->symrgtbl[rgid].rg_end = -99;
 
   int addr = rgnode->rg_start;
   int pgn = PAGING_PGN(addr);
@@ -307,7 +307,7 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
       /* Copy victim frame to swap */
       __swap_cp_page(caller->mram, vicfpn, caller->active_mswp, swpfpn);
       __swap_cp_page(caller->active_mswp, tgtfpn, caller->mram, vicfpn);
-      // enlist_framephy_node(&caller->active_mswp->free_fp_list, tgtfpn);
+      MEMPHY_put_freefp(caller->active_mswp, tgtfpn);
       MEMPHY_update_pid(&(caller->mram),vicfpn, caller->pid);
 
       /* Update page table */
@@ -323,7 +323,6 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
   put_workingset(caller->working_set, pgn);
   return 0;
 }
-
 /*pg_getval - read value at given offset
  *@mm: memory region
  *@addr: virtual address to acess
@@ -384,13 +383,10 @@ int __read(struct pcb_t *caller, int vmaid, int rgid, int offset, BYTE *data)
 
   struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, vmaid);
 
-  if (currg == NULL || cur_vma == NULL) /* Invalid memory identify */
+  if (currg == NULL || cur_vma == NULL || currg->rg_start == currg->rg_end) /* Invalid memory identify */
   {
-    printf("Read in invalid region !");
     return -1;
   }
-    
-
   pg_getval(caller->mm, currg->rg_start + offset, data, caller);
 
   return 0;
@@ -412,9 +408,11 @@ int pgread(
 #ifdef PAGETBL_DUMP
   print_pgtbl(proc, 0, -1); // print max TBL
 #endif
+#ifdef RAM_DUMP
   MEMPHY_dump(proc->mram);
 #endif
-
+#endif
+  if(val == -1)  printf("Read in invalid region !\n");
   return val;
 }
 
@@ -432,20 +430,12 @@ int __write(struct pcb_t *caller, int vmaid, int rgid, int offset, BYTE value)
 
   struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, vmaid);
 
-  if (currg == NULL || cur_vma == NULL) /* Invalid memory identify */
+  if (currg == NULL || cur_vma == NULL || currg->rg_start == currg->rg_end) /* Invalid memory identify */
   {
-    printf("Write in invalid region !");
+    printf("Write in invalid region !\n");
     return -1;
   }
-
-  if(currg->rg_start == -99 && currg->rg_end == -99)
-  {
-    printf("Write in invalid region !!!!\n");
-    return -1;
-  }
-
   pg_setval(caller->mm, currg->rg_start + offset, value, caller);
-
   return 0;
 }
 
@@ -461,7 +451,9 @@ int pgwrite(
 #ifdef PAGETBL_DUMP
   print_pgtbl(proc, 0, -1); // print max TBL
 #endif
+#ifdef RAM_DUMP
   MEMPHY_dump(proc->mram);
+#endif
 #endif
 
   return __write(proc, 0, destination, offset, data);

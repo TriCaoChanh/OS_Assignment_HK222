@@ -263,7 +263,7 @@ int alloc_pages_range2(struct pcb_t *caller, int req_pgnum, struct framephy_stru
       // Lazy Swapper: alloc in SWAP, never swaps a page into memory unless page will be needed
       if (MEMPHY_get_freefp(caller->active_mswp, &swpfpn) == 0)
       {
-        //printf("#### Alloc in swap \n");
+        printf("#### Alloc in swap \n");
         enlist_frm_lst(caller, frm_lst, newfp, swpfpn);
         frm_loc[req_pgnum - pgit - 1] = 1;
       }

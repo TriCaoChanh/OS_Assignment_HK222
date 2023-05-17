@@ -68,7 +68,6 @@ int MEMPHY_read(struct memphy_struct *mp, int addr, BYTE *value)
 
    return 0;
 }
-
 /*
  *  MEMPHY_seq_write - write MEMPHY device
  *  @mp: memphy struct
@@ -313,3 +312,4 @@ void MEMPHY_update_pid(struct memphy_struct **mp, int fpn, int pid)
    pthread_mutex_unlock(&mem_lock);
 }
 // #endif
+

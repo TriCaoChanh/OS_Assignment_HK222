@@ -152,14 +152,16 @@ void stop_timer() {
 
 void wake_up_cpu(){
 	struct timer_id_container_t * temp;
-	for (temp = dev_list; temp != NULL; temp = temp->next){
+	for (temp = dev_list; temp != NULL; temp = temp->next)
+	{
 		temp->id.cpu_ctrl = 1;
 	}
 }
 
 void sleep_cpu(){
 	struct timer_id_container_t * temp;
-	for (temp = dev_list; temp != NULL; temp = temp->next){
+	for (temp = dev_list; temp != NULL; temp = temp->next)
+	{
 		temp->id.cpu_ctrl = 0;
 	}
 }
