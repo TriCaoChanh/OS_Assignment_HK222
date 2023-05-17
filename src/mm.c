@@ -160,15 +160,17 @@ int vmap_page_range2(struct pcb_t *caller,           // process call
     if (frm_loc[pgit] == 0)
     {
       pte_set_fpn(pte, fpit->fpn);
-      MEMPHY_put_usefp(caller->mram, temp->fpn);
+      //printf("##### The PID: %d \n",caller->pid);
+      MEMPHY_put_usefp(caller->mram, temp->fpn, caller->pid);
     }
     else
     {
       pte_set_swap(pte, 0, fpit->fpn);
-      MEMPHY_put_usefp(caller->active_mswp, temp->fpn);
+      MEMPHY_put_usefp(caller->active_mswp, temp->fpn, caller->pid);
     }
 
     caller->mm->pgd[pgn + pgit] = *pte;
+    //printf("##### The update frame number is: %d \n", GETVAL(caller->mm->pgd[pgn + pgit], PAGING_PTE_FPN_MASK, 0));
     fpit = fpit->fp_next;
 
     enlist_pgn_node(&caller->mm->fifo_pgn, pgn + pgit); // put in the loop to track all the pages
@@ -227,6 +229,7 @@ void enlist_frm_lst(struct pcb_t *caller, struct framephy_struct **frm_lst, stru
   newfp->fpn = fpn;
   newfp->owner = caller->mm;
   newfp->pid_owner = caller->pid;
+  //printf("####### %d\n",caller->pid);
   newfp->fp_next = *frm_lst;
   *frm_lst = newfp;
 }
@@ -258,6 +261,7 @@ int alloc_pages_range2(struct pcb_t *caller, int req_pgnum, struct framephy_stru
       // Lazy Swapper: alloc in SWAP, never swaps a page into memory unless page will be needed
       if (MEMPHY_get_freefp(caller->active_mswp, &swpfpn) == 0)
       {
+        printf("#### Alloc in swap \n");
         enlist_frm_lst(caller, frm_lst, newfp, swpfpn);
         frm_loc[req_pgnum - pgit - 1] = 1;
       }
