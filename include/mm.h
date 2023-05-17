@@ -135,7 +135,7 @@ int pgwrite(
 /* Local VM prototypes */
 struct vm_rg_struct *get_symrg_byid(struct mm_struct *mm, int rgid);
 int validate_overlap_vm_area(struct pcb_t *caller, int vmaid, int vmastart, int vmaend);
-int get_free_vmrg_area(struct pcb_t *caller, int vmaid, int size, struct vm_rg_struct *newrg);
+int get_free_vmrg_area(struct pcb_t *caller, int vmaid, int size, struct vm_rg_struct *newrg, int* flag);
 int inc_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz);
 int find_victim_page(struct mm_struct *mm, int *pgn);
 struct vm_area_struct *get_vma_by_num(struct mm_struct *mm, int vmaid);
@@ -149,6 +149,9 @@ int MEMPHY_read(struct memphy_struct *mp, int addr, BYTE *value);
 int MEMPHY_write(struct memphy_struct *mp, int addr, BYTE data);
 int MEMPHY_dump(struct memphy_struct *mp);
 int init_memphy(struct memphy_struct *mp, int max_size, int randomflg);
+
+void MEMPHY_setfp_status(struct memphy_struct **mp, int fpn, int status);
+void MEMPHY_update_pid(struct memphy_struct **mp, int fpn, int pid);
 /* DEBUG */
 int print_list_fp(struct framephy_struct *fp);
 int print_list_rg(struct vm_rg_struct *rg);

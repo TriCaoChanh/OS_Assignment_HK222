@@ -62,6 +62,7 @@ struct mm_struct {
  */
 struct framephy_struct { 
    int fpn;
+   int status;
    struct framephy_struct *fp_next;
 
    /* Resereed for tracking allocated framed */

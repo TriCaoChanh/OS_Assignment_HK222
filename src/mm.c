@@ -161,6 +161,7 @@ int vmap_page_range2(struct pcb_t *caller,           // process call
     {
       pte_set_fpn(pte, fpit->fpn);
       //printf("##### The PID: %d \n",caller->pid);
+      //printf("##### tenmp fpn: %d \n",temp->fpn);
       MEMPHY_put_usefp(caller->mram, temp->fpn, caller->pid);
     }
     else
@@ -229,7 +230,7 @@ void enlist_frm_lst(struct pcb_t *caller, struct framephy_struct **frm_lst, stru
   newfp->fpn = fpn;
   newfp->owner = caller->mm;
   newfp->pid_owner = caller->pid;
-  //printf("####### %d\n",caller->pid);
+  //printf("####### %d\n",newfp->status);
   newfp->fp_next = *frm_lst;
   *frm_lst = newfp;
 }
@@ -249,6 +250,7 @@ int alloc_pages_range2(struct pcb_t *caller, int req_pgnum, struct framephy_stru
   for (pgit = 0; pgit < req_pgnum; pgit++)
   {
     struct framephy_struct *newfp = malloc(sizeof(struct framephy_struct));
+    newfp->status = 1; // 1 is alloc
     if (MEMPHY_get_freefp(caller->mram, &fpn) == 0)
     {
       // Successfully alloc some frame in RAM
@@ -261,7 +263,7 @@ int alloc_pages_range2(struct pcb_t *caller, int req_pgnum, struct framephy_stru
       // Lazy Swapper: alloc in SWAP, never swaps a page into memory unless page will be needed
       if (MEMPHY_get_freefp(caller->active_mswp, &swpfpn) == 0)
       {
-        printf("#### Alloc in swap \n");
+        //printf("#### Alloc in swap \n");
         enlist_frm_lst(caller, frm_lst, newfp, swpfpn);
         frm_loc[req_pgnum - pgit - 1] = 1;
       }
@@ -410,7 +412,7 @@ int print_list_fp(struct framephy_struct *ifp)
   printf("\n");
   while (fp != NULL)
   {
-    printf("Frame num[%d]  PID:%d\n", fp->fpn, fp->pid_owner);
+    printf("Frame num[%d]  PID:%d  Status:%d\n", fp->fpn, fp->pid_owner, fp->status);
     fp = fp->fp_next;
   }
   printf("\n");

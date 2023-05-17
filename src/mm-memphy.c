@@ -204,6 +204,7 @@ int MEMPHY_put_usefp(struct memphy_struct *mp, int fpn, int pid)
    newnode->fpn = fpn;
    newnode->fp_next = fp;
    newnode->pid_owner = pid;
+   newnode->status = 1;////////
    mp->used_fp_list = newnode;
    pthread_mutex_unlock(&mem_lock);
 
@@ -279,4 +280,36 @@ int init_memphy(struct memphy_struct *mp, int max_size, int randomflg)
    return 0;
 }
 
+void MEMPHY_setfp_status(struct memphy_struct **mp, int fpn, int status)
+{
+   pthread_mutex_lock(&mem_lock);
+   struct framephy_struct *fpit = (*mp)->used_fp_list;  
+   while(fpit != NULL)
+   {
+      if(fpit->fpn == fpn)
+      {
+         fpit->status = status;
+         break;
+      }
+      fpit = fpit->fp_next;
+   }
+
+   pthread_mutex_unlock(&mem_lock);
+}
+
+void MEMPHY_update_pid(struct memphy_struct **mp, int fpn, int pid)
+{
+   pthread_mutex_lock(&mem_lock);
+   struct framephy_struct *fpit = (*mp)->used_fp_list;  
+   while(fpit != NULL)
+   {
+      if(fpit->fpn == fpn)
+      {
+         fpit->pid_owner = pid;
+         break;
+      }
+      fpit = fpit->fp_next;
+   }
+   pthread_mutex_unlock(&mem_lock);
+}
 // #endif
